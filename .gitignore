@@ -53,12 +53,4 @@ dkms.conf
 
 
 # Added by me
-.libs
-.deps
-.vscode
-*.log
-*.status
-Makefile
-*.pc
-sqlite3
-libtool
+build
