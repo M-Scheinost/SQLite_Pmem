@@ -64,6 +64,7 @@ void write_hello_string (char *buf, char *path)
 	strcpy(pmemaddr, buf);
 
 	/* flush above strcpy to persistence */
+	printf("%i\n", is_pmem);
 	if (is_pmem)
 		pmem_persist(pmemaddr, mapped_len);
 	else
@@ -79,6 +80,7 @@ void write_hello_string (char *buf, char *path)
  * This function reads the "Hello..." string from persistent-memory.
  *****************************/
 void read_hello_string(char *path)
+
 {
 	char *pmemaddr;
 	size_t mapped_len;
@@ -113,11 +115,9 @@ int main(int argc, char *argv[])
 	char buf[MAX_BUF_LEN] = "Hello Persistent Memory!!!";
 	
 	if (strcmp (argv[1], "-w") == 0) {
-	
 		write_hello_string (buf, path);
-		
-	}   else if (strcmp (argv[1], "-r") == 0) {
-
+	}
+	else if (strcmp (argv[1], "-r") == 0) {
 		read_hello_string(path);
 	}	
 	else { 
