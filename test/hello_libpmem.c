@@ -48,7 +48,7 @@ SPDX-License-Identifier: BSD-3-Clause
 /****************************
  * This function writes the "Hello..." string to persistent-memory.
  *****************************/
-void write_hello_string (char *buf, char *path)
+void write_hello_string (void *buf, char *path)
 {
 	char *pmemaddr;
 	size_t mapped_len;
@@ -60,8 +60,9 @@ void write_hello_string (char *buf, char *path)
 		perror("pmem_map_file");
 		exit(1);
 	}
+	printf("%s\n", pmemaddr);
 	/* store a string to the persistent memory */
-	strcpy(pmemaddr, buf);
+	strcpy(pmemaddr+20, (char*)buf);
 
 	/* flush above strcpy to persistence */
 	printf("%i\n", is_pmem);
