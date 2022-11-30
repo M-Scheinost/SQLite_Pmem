@@ -54,3 +54,4 @@ dkms.conf
 # Added by me
 build
 *.db
+*.db-wal
