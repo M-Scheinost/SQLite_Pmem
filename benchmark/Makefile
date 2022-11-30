@@ -1,4 +1,4 @@
-CFLAGS=-Wall -I. ../sqlite -O2 -DNDEBUG -std=c99
+CFLAGS=-Wall -I. ../sqlite ../vfs -O2 -DNDEBUG -std=c99 $(shell pkg-config --cflags libpmem)
 SRCS=$(wildcard *.c)
 OBJS=$(SRCS:.c=.o)
 HDRS=$(wildcard *.h)

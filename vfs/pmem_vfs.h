@@ -30,4 +30,4 @@
 */
 #define MAXPATHNAME 512
 
-sqlite3_vfs *sqlite3_demovfs(void);
+sqlite3_vfs *sqlite3_pmem_vfs(void);

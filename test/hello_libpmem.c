@@ -62,7 +62,7 @@ void write_hello_string (void *buf, char *path)
 	}
 	printf("%s\n", pmemaddr);
 	/* store a string to the persistent memory */
-	strcpy(pmemaddr+20, (char*)buf);
+	strcpy(pmemaddr+11, (char*)buf);
 
 	/* flush above strcpy to persistence */
 	printf("%i\n", is_pmem);

@@ -116,7 +116,7 @@
 #if !defined(SQLITE_TEST) || SQLITE_OS_UNIX
 
 #include "pmem_vfs.h"
-
+#include <stdlib.h>
 
 /*
 ** When using this VFS, the sqlite3_file* handles that SQLite uses are
@@ -145,7 +145,6 @@ static int pmem_direct_write(
 ){  
   /*Check if one decides to write beyond the file end*/
   if(iOfst + iAmt > PMEM_LEN){
-    perror("Pmem-file not large enough for write");
     return SQLITE_IOERR_WRITE;
   }
 
@@ -155,7 +154,6 @@ static int pmem_direct_write(
 
   if ((pmem_addr = (char *)pmem_map_file(p->path, PMEM_LEN, PMEM_FILE_CREATE,
 				0666, &mapped_len, &is_pmem)) == NULL) {
-		perror("pmem_map_file");
 		return SQLITE_IOERR_WRITE;
 	}
 
@@ -181,7 +179,7 @@ static int pmem_direct_write(
 static int pmem_flush_buffer(Persistent_File *p){
   int rc = SQLITE_OK;
   if( p->nBuffer ){
-    rc = demoDirectWrite(p, p->aBuffer, p->nBuffer, p->iBufferOfst);
+    rc = pmem_direct_write(p, p->aBuffer, p->nBuffer, p->iBufferOfst);
     p->nBuffer = 0;
   }
   return rc;
@@ -227,7 +225,6 @@ static int pmem_read(
   }
 
   if(iOfst + iAmt > PMEM_LEN){
-    perror("Pmem-file not large enough for write");
     return SQLITE_IOERR_READ;
   }
 
@@ -609,7 +606,7 @@ static int demoCurrentTime(sqlite3_vfs *pVfs, double *pTime){
 **
 **   sqlite3_vfs_register(sqlite3_demovfs(), 0);
 */
-sqlite3_vfs *sqlite3_demovfs(void){
+sqlite3_vfs *sqlite3_pmem_vfs(void){
   static sqlite3_vfs demovfs = {
     1,                            /* iVersion */
     sizeof(Persistent_File),             /* szOsFile */
