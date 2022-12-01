@@ -51,6 +51,7 @@ SPDX-License-Identifier: BSD-3-Clause
 void write_hello_string (void *buf, char *path)
 {
 	char *pmemaddr;
+	
 	size_t mapped_len;
 	int is_pmem;
 	
