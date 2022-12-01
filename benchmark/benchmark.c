@@ -3,6 +3,7 @@
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
 #include "bench.h"
+#include "pmem_vfs.h"
 
 enum Order {
   SEQUENTIAL,
@@ -332,6 +333,11 @@ void benchmark_open() {
             tmp_dir,
             db_num_);
   status = sqlite3_open(file_name, &db_);
+
+  
+  sqlite3_vfs_register(sqlite3_pmem_vfs(), 1);
+
+
   if (status) {
     fprintf(stderr, "open error: %s\n", sqlite3_errmsg(db_));
     exit(1);

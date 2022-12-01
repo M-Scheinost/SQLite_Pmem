@@ -3,7 +3,6 @@
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
 #include "bench.h"
-#include "../vfs/pmem_vfs.h"
 
 // Comma-separated list of operations to run in the specified order
 //   Actual benchmarks:
@@ -195,10 +194,6 @@ int main(int argc, char** argv) {
   /* Choose a location for the test database if none given with --db=<path>  */
   if (FLAGS_db == NULL)
       FLAGS_db = default_db_path;
-
-  printf("Registering the PMEM vfs\n");
-  sqlite3_vfs_register(sqlite3_pmem_vfs(), 0);
-  printf("Successfully registered the PMEM vfs\n");
 
   benchmark_init();
   benchmark_run();

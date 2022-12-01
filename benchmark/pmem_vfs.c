@@ -61,62 +61,13 @@
 **     2. The journal file is synced to disk.
 **     3. A modification is made to the first few bytes of the journal file.
 **     4. The journal file is synced to disk again.
-**
-**   Most of the data is written in step 1 using a series of calls to the
-**   VFS xWrite() method. The buffers passed to the xWrite() calls are of
-**   various sizes. For example, as of version 3.6.24, when committing a 
-**   transaction that modifies 3 pages of a database file that uses 4096 
-**   byte pages residing on a media with 512 byte sectors, SQLite makes 
-**   eleven calls to the xWrite() method to create the rollback journal, 
-**   as follows:
-**
-**             Write offset | Bytes written
-**             ----------------------------
-**                        0            512
-**                      512              4
-**                      516           4096
-**                     4612              4
-**                     4616              4
-**                     4620           4096
-**                     8716              4
-**                     8720              4
-**                     8724           4096
-**                    12820              4
-**             ++++++++++++SYNC+++++++++++
-**                        0             12
-**             ++++++++++++SYNC+++++++++++
-**
-**   On many operating systems, this is an efficient way to write to a file.
-**   However, on some embedded systems that do not cache writes in OS 
-**   buffers it is much more efficient to write data in blocks that are
-**   an integer multiple of the sector-size in size and aligned at the
-**   start of a sector.
-**
-**   To work around this, the code in this file allocates a fixed size
-**   buffer of SQLITE_DEMOVFS_BUFFERSZ using sqlite3_malloc() whenever a 
-**   journal file is opened. It uses the buffer to coalesce sequential
-**   writes into aligned SQLITE_DEMOVFS_BUFFERSZ blocks. When SQLite
-**   invokes the xSync() method to sync the contents of the file to disk,
-**   all accumulated data is written out, even if it does not constitute
-**   a complete block. This means the actual IO to create the rollback 
-**   journal for the example transaction above is this:
-**
-**             Write offset | Bytes written
-**             ----------------------------
-**                        0           8192
-**                     8192           4632
-**             ++++++++++++SYNC+++++++++++
-**                        0             12
-**             ++++++++++++SYNC+++++++++++
-**
-**   Much more efficient if the underlying OS is not caching write 
-**   operations.
 */
 
 #if !defined(SQLITE_TEST) || SQLITE_OS_UNIX
 
 #include "pmem_vfs.h"
 #include <stdlib.h>
+#include <stdio.h>
 
 /*
 ** When using this VFS, the sqlite3_file* handles that SQLite uses are
@@ -409,7 +360,8 @@ static int pmem_open(
   char *aBuf = 0;
 
   if( zName==0 ){
-    return SQLITE_IOERR;
+    printf("No path given\n");
+    exit(1);
   }
 
   if( flags&SQLITE_OPEN_MAIN_JOURNAL ){
