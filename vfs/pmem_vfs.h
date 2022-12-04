@@ -20,9 +20,9 @@
 # define SQLITE_DEMOVFS_BUFFERSZ 8192
 #endif
 
-/* This is 1k x 1k of pmem in bytes*/
+/* This is 2^30 of pmem in bytes*/
 #ifndef PMEM_LEN
-# define PMEM_LEN 1048576
+# define PMEM_LEN 1073741824
 #endif
 
 /*

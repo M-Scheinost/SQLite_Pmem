@@ -4,7 +4,7 @@
 #--------------------------------------------
 #--------------------------------------------
 # SQLite build script for amalgamation
-cmake_minimum_required(VERSION 2.8 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.10 FATAL_ERROR)
 
 set(PROJECT_NAME sqlite)
 
@@ -22,21 +22,17 @@ option(WITH_SQLITE_RTREE    "Build R*Tree index extension" OFF)
 set(INSTALL_BIN_DIR "${CMAKE_INSTALL_PREFIX}/bin" CACHE PATH "Installation directory for executables")
 set(INSTALL_LIB_DIR "${CMAKE_INSTALL_PREFIX}/lib" CACHE PATH "Installation directory for libraries")
 set(INSTALL_INC_DIR "${CMAKE_INSTALL_PREFIX}/include" CACHE PATH "Installation directory for headers")
+set(CMAKE_C_STANDARD 11)
+set(CMAKE_C_STANDARD_REQUIRED ON)
+set(CMAKE_C_FLAGS_RELEASE -lpmem)
 
 set(SQLITE_WIN_BUILD OFF)
-if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
-    set(SQLITE_WIN_BUILD ON)
-endif()
-
 set(SQLITE_WINRT_BUILD OFF)
-if(${CMAKE_SYSTEM_NAME} MATCHES "WindowsStore")
-    set(SQLITE_WINRT_BUILD ON)
-endif()
 
 # ---------------------
 # Version detection
 # ---------------------
-file(STRINGS "${PROJECT_SOURCE_DIR}/src/sqlite3.h" _sqlite_api_h_VER_STRING REGEX ".*#define[ ]+SQLITE_VERSION[ ]+")
+file(STRINGS "${PROJECT_SOURCE_DIR}/sqlite/sqlite3.h" _sqlite_api_h_VER_STRING REGEX ".*#define[ ]+SQLITE_VERSION[ ]+")
 
 string(REGEX MATCH "[0-9\\.]+" SQLITE_VER_STRING ${_sqlite_api_h_VER_STRING})
 string(REGEX MATCHALL "[0-9]+" _sqlite_ver_LIST "${SQLITE_VER_STRING}")
@@ -54,14 +50,21 @@ message("FOUND: SQLite version = ${SQLITE_VER_STRING}")
 set(SQLITE_DYN_NAME "${PROJECT_NAME}${SQLITE_VER_MAJOR}")
 set(SQLITE_STATIC_NAME "${SQLITE_DYN_NAME}-static")
 
+#-----------------------------------------------
+# Includes
+#-----------------------------------------------
 find_package(Threads REQUIRED)
 
 # add include path for project
 include_directories(${PROJECT_SOURCE_DIR}/src)
+include(${CMAKE_SOURCE_DIR}/benchmark/local.cmake)
+include(${CMAKE_SOURCE_DIR}/sqlite/local.cmake)
+include(${CMAKE_SOURCE_DIR}/vfs/local.cmake)
 
-set(SRC_LIB_FILE ${PROJECT_SOURCE_DIR}/src/sqlite${SQLITE_VER_MAJOR}.c)
-set(SRC_SHELL_FILE ${PROJECT_SOURCE_DIR}/src/shell.c)
-file(GLOB HDR_FILES ${PROJECT_SOURCE_DIR}/src/*.h)
+set(SRC_LIB_FILE ${PROJECT_SOURCE_DIR}/sqlite/sqlite${SQLITE_VER_MAJOR}.c)
+set(SRC_SHELL_FILE ${PROJECT_SOURCE_DIR}/sqlite/shell.c)
+
+file(GLOB HDR_FILES ${PROJECT_SOURCE_DIR}/sqlite/*.h)
 
 # adding compilation flags depending on options
 if(WITH_SQLITE_DEBUG)
@@ -72,11 +75,6 @@ if(WITH_SQLITE_MEMDEBUG)
 endif()
 if(WITH_SQLITE_RTREE)
     add_definitions(-DSQLITE_ENABLE_RTREE)
-endif()
-
-if(SQLITE_WINRT_BUILD)
-    # Don't use tools that are unavailable on RT platforms
-    add_definitions(-DSQLITE_OS_WINRT)
 endif()
 
 if (SQLITE_BUILD_STATIC)
@@ -93,7 +91,17 @@ if (SQLITE_BUILD_SHARED)
     endif()
 endif()
 
+
+#----------------------------------------------
+#   build bench executable
+#----------------------------------------------
+
+add_executable(bench ${BENCHMARK_MAIN_FILE})
+target_link_libraries(bench ${BENCHMARK_FILES} sqlite vfs Threads::Threads)
+
+#----------------------------------
 # build shell executable
+#---------------------------------
 add_executable(shell ${SRC_SHELL_FILE})
 
 if (SQLITE_BUILD_SHARED)
@@ -106,7 +114,11 @@ else()
     message(FATAL_ERROR "either static or dynamic option should be selected")
 endif()
 
-# installation
+
+
+#-------------------------------------------
+#   installation
+#------------------------------------------
 list(APPEND TO_INSTALL shell)
 if(SQLITE_BUILD_SHARED)
     list(APPEND TO_INSTALL ${SQLITE_DYN_NAME})

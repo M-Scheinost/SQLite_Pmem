@@ -93,7 +93,8 @@ static int pmem_direct_write(
   const void *zBuf,               /* Buffer containing data to write */
   int iAmt,                       /* Size of data to write in bytes */
   sqlite_int64 iOfst              /* File offset to write to */
-){  
+){
+  printf("direct write\n");  
   /*Check if one decides to write beyond the file end*/
   if(iOfst + iAmt > PMEM_LEN){
     return SQLITE_IOERR_WRITE;
@@ -128,6 +129,7 @@ static int pmem_direct_write(
 ** a journal file) or if the buffer is currently empty.
 */
 static int pmem_flush_buffer(Persistent_File *p){
+  printf("flushing buffer\n");
   int rc = SQLITE_OK;
   if( p->nBuffer ){
     rc = pmem_direct_write(p, p->aBuffer, p->nBuffer, p->iBufferOfst);
@@ -142,6 +144,7 @@ static int pmem_flush_buffer(Persistent_File *p){
  * this function just frees the buffer
 */
 static int pmem_close(sqlite3_file *pFile){
+  printf("closing\n");
   int rc;
   Persistent_File *p = (Persistent_File*)pFile;
   rc = pmem_flush_buffer(p);
@@ -159,6 +162,7 @@ static int pmem_read(
   int iAmt, /* the size of the buffer */
   sqlite_int64 iOfst /*the offset to read */
 ){
+  printf("pmem read\n");
   Persistent_File *p = (Persistent_File*)pFile;
   off_t ofst;                     /* Return value from lseek() */
   int nRead;                      /* Return value from read() */
@@ -186,7 +190,7 @@ static int pmem_read(
   /* open the pmem file to read back the data */
   if ((pmem_addr = (char *)pmem_map_file(p->path, PMEM_LEN, PMEM_FILE_CREATE,
         0666, &mapped_len, &is_pmem)) == NULL) {
-    exit(1);
+    printf("pmem Mapping failed\n");
   }
 
   strncpy((char*)zBuf, pmem_addr+iOfst, iAmt);
@@ -204,6 +208,7 @@ static int pmem_write (
   int iAmt, 
   sqlite_int64 iOfst
 ){
+  printf("pmem_write\n");
   Persistent_File *p = (Persistent_File*)pFile;
   
   if( p->aBuffer ){
@@ -216,7 +221,7 @@ static int pmem_write (
 
       /* If the buffer is full, or if this data is not being written directly
       ** following the data already buffered, flush the buffer. Flushing
-      ** the buffer is a no-op if it is empty.  
+      ** the buffer is a no-op if it is empty.
       */
       if( p->nBuffer==SQLITE_DEMOVFS_BUFFERSZ || p->iBufferOfst+p->nBuffer!=i ){
         int rc = pmem_flush_buffer(p);
@@ -339,6 +344,7 @@ static int pmem_open(
   int flags,                      /* Input SQLITE_OPEN_XXX flags */
   int *pOutFlags                  /* Output SQLITE_OPEN_XXX flags (or NULL) */
 ){
+  printf("pmem_open\n");
   static const sqlite3_io_methods demoio = {
     1,                            /* iVersion */
     pmem_close,                    /* xClose */
@@ -443,6 +449,7 @@ static int demoAccess(
   int flags, 
   int *pResOut
 ){
+  printf("demo Access\n");
   int rc;                         /* access() return code */
   int eAccess = F_OK;             /* Second argument to access() */
 
@@ -470,22 +477,15 @@ static int demoAccess(
 **   1. Path components are separated by a '/'. and 
 **   2. Full paths begin with a '/' character.
 */
-static int demoFullPathname(
+static int pmem_full_path(
   sqlite3_vfs *pVfs,              /* VFS */
   const char *zPath,              /* Input path (possibly a relative path) */
   int nPathOut,                   /* Size of output buffer in bytes */
   char *zPathOut                  /* Pointer to output buffer */
 ){
-  char zDir[MAXPATHNAME+1];
-  if( zPath[0]=='/' ){
-    zDir[0] = '\0';
-  }else{
-    if( getcwd(zDir, sizeof(zDir))==0 ) return SQLITE_IOERR;
-  }
-  zDir[MAXPATHNAME] = '\0';
+  printf("%s\n", zPath);
 
-  sqlite3_snprintf(nPathOut, zPathOut, "%s/%s", zDir, zPath);
-  zPathOut[nPathOut-1] = '\0';
+  strcpy(zPathOut, zPath);
 
   return SQLITE_OK;
 }
@@ -558,6 +558,7 @@ static int demoCurrentTime(sqlite3_vfs *pVfs, double *pTime){
 **   sqlite3_vfs_register(sqlite3_demovfs(), 0);
 */
 sqlite3_vfs *sqlite3_pmem_vfs(void){
+  printf("pmem vfs\n");
   static sqlite3_vfs demovfs = {
     1,                            /* iVersion */
     sizeof(Persistent_File),             /* szOsFile */
@@ -568,7 +569,7 @@ sqlite3_vfs *sqlite3_pmem_vfs(void){
     pmem_open,                     /* xOpen */
     demoDelete,                   /* xDelete */
     demoAccess,                   /* xAccess */
-    demoFullPathname,             /* xFullPathname */
+    pmem_full_path,             /* xFullPathname */
     demoDlOpen,                   /* xDlOpen */
     demoDlError,                  /* xDlError */
     demoDlSym,                    /* xDlSym */
