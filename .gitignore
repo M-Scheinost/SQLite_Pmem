@@ -55,3 +55,6 @@ dkms.conf
 build
 *.db
 *.db-wal
+build
+release
+Release

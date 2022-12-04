@@ -24,7 +24,8 @@ set(INSTALL_LIB_DIR "${CMAKE_INSTALL_PREFIX}/lib" CACHE PATH "Installation direc
 set(INSTALL_INC_DIR "${CMAKE_INSTALL_PREFIX}/include" CACHE PATH "Installation directory for headers")
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
-set(CMAKE_C_FLAGS_RELEASE -lpmem)
+set(CMAKE_C_FLAGS_RELEASE "-DNDEBUG -O3")
+set(CMAKE_C_FLAGS_DEBUG "-O0 -D_GLIBCXX_DEBUG")
 
 set(SQLITE_WIN_BUILD OFF)
 set(SQLITE_WINRT_BUILD OFF)
@@ -97,7 +98,7 @@ endif()
 #----------------------------------------------
 
 add_executable(bench ${BENCHMARK_MAIN_FILE})
-target_link_libraries(bench ${BENCHMARK_FILES} sqlite vfs Threads::Threads)
+target_link_libraries(bench ${BENCHMARK_FILES} sqlite vfs Threads::Threads pmem dl m)
 
 #----------------------------------
 # build shell executable
