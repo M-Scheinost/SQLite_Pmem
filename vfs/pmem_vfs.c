@@ -161,11 +161,12 @@ static int pmem_direct_write(
   if (p->is_pmem && p->is_wal)
 		pmem_persist(p->pmem_file,p->mapped_len);
 	else
-		pmem_msync(p->pmem_addr,p->mapped_len);
-
+		pmem_msync(p->pmem_file,p->mapped_len);
+  /*
   if(pmem_unmap(pmem_addr,mapped_len)){
     return SQLITE_IOERR_WRITE;
   }
+  */
   return SQLITE_OK;
 }
 
@@ -460,12 +461,12 @@ static int pmem_open(
   if( flags&SQLITE_OPEN_READWRITE ) oflags |= O_RDWR;
   */
 
- 
+
   /* completly zeros p*/
   memset(p, 0, sizeof(Persistent_File));
   p->path = zName;
   p->pVfs = pVfs;
-  p->pMethod = pmem_io;
+  p->pMethod = &pmem_io;
   p->aBuffer = aBuf;
 
   if ((p->pmem_file = (char *)pmem_map_file(p->path, PMEM_LEN, PMEM_FILE_CREATE,
