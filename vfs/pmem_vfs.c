@@ -123,11 +123,16 @@
 ** actually pointers to instances of type Persistent_File.
 */
 typedef struct Persistent_File Persistent_File;
+
 struct Persistent_File {
-  sqlite3_file base;              /* Base class. Must be first. */
+  sqlite3_io_methods const *pMethod;  /* Always the first entry */
+  sqlite3_vfs *pVfs;                  /* The VFS that created this unixFile */
+
   const char* path;       /*path of the file*/
   int is_wal;             /*1 for wal file, 0 for database file*/
-
+  int is_pmem;            /*1 if pmem, 0 otherwise*/
+  size_t mapped_len;      /*The size of memory that was actually mapped, the pmem_file size*/
+  char* pmem_file;        /*The entire pmem fiel represented as char array*/
   char *aBuffer;                  /* Pointer to malloc'd buffer */
   int nBuffer;                    /* Valid bytes of data in zBuffer */
   sqlite3_int64 iBufferOfst;      /* Offset in file of zBuffer[0] */
@@ -148,22 +153,15 @@ static int pmem_direct_write(
     return SQLITE_IOERR_WRITE;
   }
 
-  char *pmem_addr; /*The entire pmem file represented as char array*/
-	size_t mapped_len; /*The size of memory that was actually mapped*/
-	int is_pmem;  /*flag, indicating wether the file is on DAX-PMEM or not*/
 
-  if ((pmem_addr = (char *)pmem_map_file(p->path, PMEM_LEN, PMEM_FILE_CREATE,
-				0666, &mapped_len, &is_pmem)) == NULL) {
-		return SQLITE_IOERR_WRITE;
-	}
 
-  strncpy(pmem_addr+iOfst, (char*)zBuf, iAmt);
+  strncpy(p->pmem_file+iOfst, (char*)zBuf, iAmt);
 
   /*make sure the wal is always persistent*/
-  if (is_pmem && p->is_wal)
-		pmem_persist(pmem_addr, mapped_len);
+  if (p->is_pmem && p->is_wal)
+		pmem_persist(p->pmem_file,p->mapped_len);
 	else
-		pmem_msync(pmem_addr, mapped_len);
+		pmem_msync(p->pmem_addr,p->mapped_len);
 
   if(pmem_unmap(pmem_addr,mapped_len)){
     return SQLITE_IOERR_WRITE;
@@ -389,7 +387,7 @@ static int pmem_open(
   int flags,                      /* Input SQLITE_OPEN_XXX flags */
   int *pOutFlags                  /* Output SQLITE_OPEN_XXX flags (or NULL) */
 ){
-  static const sqlite3_io_methods demoio = {
+  static const sqlite3_io_methods pmem_io = {
     1,                            /* iVersion */
     pmem_close,                    /* xClose */
     pmem_read,                     /* xRead */
@@ -406,6 +404,8 @@ static int pmem_open(
   };
 
   Persistent_File *p = (Persistent_File*)pFile; /* Populate this structure */
+  
+
   int oflags = 0;                 /* flags to pass to open() call */
   char *aBuf = 0;
 
@@ -425,14 +425,24 @@ static int pmem_open(
   if( flags&SQLITE_OPEN_READONLY )  oflags |= O_RDONLY;
   if( flags&SQLITE_OPEN_READWRITE ) oflags |= O_RDWR;
 
+  /* completly zeros p*/
   memset(p, 0, sizeof(Persistent_File));
-  p->aBuffer = aBuf;
   p->path = zName;
+  p->pVfs = pVfs;
+  p->pMethod = pmem_io;
+  p->aBuffer = aBuf;
+
+  if ((p->pmem_file = (char *)pmem_map_file(p->path, PMEM_LEN, PMEM_FILE_CREATE,
+        0666, &p->mapped_len, &p->is_pmem)) == NULL) {
+    return SQLITE_NOMEM;
+  }
+
+
+
 
   if( pOutFlags ){
     *pOutFlags = flags;
   }
-  p->base.pMethods = &demoio;
   return SQLITE_OK;
 }
 
