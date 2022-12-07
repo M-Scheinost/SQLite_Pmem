@@ -117,6 +117,7 @@
 
 #include "pmem_vfs.h"
 #include <stdlib.h>
+#include <stdio.h>
 
 /*
 ** When using this VFS, the sqlite3_file* handles that SQLite uses are
@@ -349,12 +350,15 @@ static int pmem_file_size(sqlite3_file *pFile, sqlite_int64 *pSize){
 ** file is found in the file-system it is rolled back.
 */
 static int pmem_lock(sqlite3_file *pFile, int eLock){
+  printf("lock\n");
   return SQLITE_OK;
 }
 static int pmem_unlock(sqlite3_file *pFile, int eLock){
+  printf("unlock\n");
   return SQLITE_OK;
 }
 static int pmem_check_reserved_lock(sqlite3_file *pFile, int *pResOut){
+  printf("reserved lock\n");
   *pResOut = 0;
   return SQLITE_OK;
 }
@@ -363,6 +367,7 @@ static int pmem_check_reserved_lock(sqlite3_file *pFile, int *pResOut){
 ** No xFileControl() verbs are implemented by this VFS.
 */
 static int pmem_file_control(sqlite3_file *pFile, int op, void *pArg){
+  printf("file control\n");
   return SQLITE_NOTFOUND;
 }
 
@@ -372,9 +377,11 @@ static int pmem_file_control(sqlite3_file *pFile, int op, void *pArg){
 ** access to some extent. But it is also safe to simply return 0.
 */
 static int pmem_sector_size(sqlite3_file *pFile){
+  printf("sector size\n");
   return 0;
 }
 static int pmem_device_characteristics(sqlite3_file *pFile){
+  printf("device characteristics\n");
   return 0;
 }
 
@@ -388,6 +395,7 @@ static int pmem_open(
   int flags,                      /* Input SQLITE_OPEN_XXX flags */
   int *pOutFlags                  /* Output SQLITE_OPEN_XXX flags (or NULL) */
 ){
+  printf("open\n");
   static const sqlite3_io_methods pmem_io = {
     1,                            /* iVersion */
     pmem_close,                    /* xClose */
@@ -409,6 +417,11 @@ static int pmem_open(
 
   int oflags = 0;                 /* flags to pass to open() call */
   char *aBuf = 0;
+  int eType = flags&0x0FFF00;  /* Type of file to open */
+  int noLock;                    /* True to omit locking primitives */
+  int rc = SQLITE_OK;            /* Function Return Code */
+  int ctrlFlags = 0;             /* UNIXFILE_* flags */
+
 
   if( zName==0 ){
     return SQLITE_IOERR;
@@ -480,6 +493,8 @@ static int pmem_open(
   if( pOutFlags ){
     *pOutFlags = flags;
   }
+
+  printf("open finished\n");
   return SQLITE_OK;
 }
 

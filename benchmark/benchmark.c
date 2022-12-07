@@ -3,7 +3,7 @@
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
 #include "bench.h"
-#include "pmem_vfs.h"
+#include "../vfs/pmem_vfs.h"
 
 enum Order {
   SEQUENTIAL,
