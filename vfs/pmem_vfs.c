@@ -149,6 +149,7 @@ static int pmem_direct_write(
   int iAmt,                       /* Size of data to write in bytes */
   sqlite_int64 iOfst              /* File offset to write to */
 ){  
+   printf("direct write\n");
   /*Check if one decides to write beyond the file end*/
   if(iOfst + iAmt > PMEM_LEN){
     return SQLITE_IOERR_WRITE;
@@ -172,12 +173,14 @@ static int pmem_direct_write(
 }
 
 /*
-** Flush the contents of the DemoFile.aBuffer buffer to disk. This is a
+** Flush the contents of the aBuffer buffer to disk. This is a
 ** no-op if this particular file does not have a buffer (i.e. it is not
 ** a journal file) or if the buffer is currently empty.
 */
 static int pmem_flush_buffer(Persistent_File *p){
+   printf("flush buffer\n");
   int rc = SQLITE_OK;
+  printf("%i\n", p->nBuffer);
   if( p->nBuffer ){
     rc = pmem_direct_write(p, p->aBuffer, p->nBuffer, p->iBufferOfst);
     p->nBuffer = 0;
@@ -191,11 +194,17 @@ static int pmem_flush_buffer(Persistent_File *p){
  * this function just frees the buffer
 */
 static int pmem_close(sqlite3_file *pFile){
+   printf("close\n");
   int rc;
   Persistent_File *p = (Persistent_File*)pFile;
   rc = pmem_flush_buffer(p);
   sqlite3_free(p->aBuffer);
   
+  if(p->is_pmem){
+    if(pmem_unmap(p->pmem_file,p->mapped_len)){
+      return SQLITE_IOERR_WRITE;
+  }
+  }
   return rc;
 }
 
@@ -208,6 +217,7 @@ static int pmem_read(
   int iAmt, /* the size of the buffer */
   sqlite_int64 iOfst /*the offset to read */
 ){
+   printf("read\n");
   Persistent_File *p = (Persistent_File*)pFile;
   off_t ofst;                     /* Return value from lseek() */
   int nRead;                      /* Return value from read() */
@@ -254,6 +264,7 @@ static int pmem_write (
   int iAmt, 
   sqlite_int64 iOfst
 ){
+   printf("write\n");
   Persistent_File *p = (Persistent_File*)pFile;
   
   if( p->aBuffer ){
@@ -301,6 +312,7 @@ static int pmem_write (
 ** the top of the file).
 */
 static int pmem_truncate(sqlite3_file *pFile, sqlite_int64 size){
+  printf("truncate\n");
 #if 0
   if( ftruncate(((DemoFile *)pFile)->fd, size) ) return SQLITE_IOERR_TRUNCATE;
 #endif
@@ -311,6 +323,7 @@ static int pmem_truncate(sqlite3_file *pFile, sqlite_int64 size){
 ** Sync the contents of the file to the persistent media.
 */
 static int pmem_sync(sqlite3_file *pFile, int flags){
+  printf("pmem sync\n");
   Persistent_File *p = (Persistent_File*)pFile;
   int rc;
 
@@ -326,6 +339,7 @@ static int pmem_sync(sqlite3_file *pFile, int flags){
 ** Write the size of the file in bytes to *pSize.
 */
 static int pmem_file_size(sqlite3_file *pFile, sqlite_int64 *pSize){
+  printf("file size\n");
   Persistent_File *p = (Persistent_File*)pFile;
 
   /* Flush the contents of the buffer to disk. As with the flush in the
@@ -498,40 +512,47 @@ static int pmem_open(
   return SQLITE_OK;
 }
 
+
 /*
-** Delete the file identified by argument zPath. If the dirSync parameter
-** is non-zero, then ensure the file-system modification to delete the
-** file has been synced to disk before returning.
+** Delete the file at zPath. If the dirSync argument is true, fsync()
+** the directory after deleting the file.
 */
-static int demoDelete(sqlite3_vfs *pVfs, const char *zPath, int dirSync){
-  int rc;                         /* Return code */
-
-  rc = unlink(zPath);
-  if( rc!=0 && errno==ENOENT ) return SQLITE_OK;
-
-  if( rc==0 && dirSync ){
-    int dfd;                      /* File descriptor open on directory */
-    int i;                        /* Iterator variable */
-    char *zSlash;
-    char zDir[MAXPATHNAME+1];     /* Name of directory containing file zPath */
-
-    /* Figure out the directory name from the path of the file deleted. */
-    sqlite3_snprintf(MAXPATHNAME, zDir, "%s", zPath);
-    zDir[MAXPATHNAME] = '\0';
-    zSlash = strrchr(zDir,'/');
-    if( zSlash ){
-      /* Open a file-descriptor on the directory. Sync. Close. */
-      zSlash[0] = 0;
-      dfd = open(zDir, O_RDONLY, 0);
-      if( dfd<0 ){
-        rc = -1;
-      }else{
-        rc = fsync(dfd);
-        close(dfd);
+static int unixDelete(
+  sqlite3_vfs *NotUsed,     /* VFS containing this as the xDelete method */
+  const char *zPath,        /* Name of file to be deleted */
+  int dirSync               /* If true, fsync() directory after deleting file */
+){
+  int rc = SQLITE_OK;
+  UNUSED_PARAMETER(NotUsed);
+  SimulateIOError(return SQLITE_IOERR_DELETE);
+  if( osUnlink(zPath)==(-1) ){
+    if( errno==ENOENT
+#if OS_VXWORKS
+        || osAccess(zPath,0)!=0
+#endif
+    ){
+      rc = SQLITE_IOERR_DELETE_NOENT;
+    }else{
+      rc = unixLogError(SQLITE_IOERR_DELETE, "unlink", zPath);
+    }
+    return rc;
+  }
+#ifndef SQLITE_DISABLE_DIRSYNC
+  if( (dirSync & 1)!=0 ){
+    int fd;
+    rc = osOpenDirectory(zPath, &fd);
+    if( rc==SQLITE_OK ){
+      if( full_fsync(fd,0,0) ){
+        rc = unixLogError(SQLITE_IOERR_DIR_FSYNC, "fsync", zPath);
       }
+      robust_close(0, fd, __LINE__);
+    }else{
+      assert( rc==SQLITE_CANTOPEN );
+      rc = SQLITE_OK;
     }
   }
-  return (rc==0 ? SQLITE_OK : SQLITE_IOERR_DELETE);
+#endif
+  return rc;
 }
 
 #ifndef F_OK
@@ -669,7 +690,7 @@ static int demoCurrentTime(sqlite3_vfs *pVfs, double *pTime){
 **   sqlite3_vfs_register(sqlite3_demovfs(), 0);
 */
 sqlite3_vfs *sqlite3_pmem_vfs(void){
-  static sqlite3_vfs demovfs = {
+  static sqlite3_vfs pmem_vfs = {
     1,                            /* iVersion */
     sizeof(Persistent_File),             /* szOsFile */
     MAXPATHNAME,                  /* mxPathname */
@@ -677,7 +698,7 @@ sqlite3_vfs *sqlite3_pmem_vfs(void){
     "Pmem_VFS",                       /* zName */
     0,                            /* pAppData */
     pmem_open,                     /* xOpen */
-    demoDelete,                   /* xDelete */
+    unixDelete,                   /* xDelete */
     demoAccess,                   /* xAccess */
     demoFullPathname,             /* xFullPathname */
     demoDlOpen,                   /* xDlOpen */
@@ -687,9 +708,128 @@ sqlite3_vfs *sqlite3_pmem_vfs(void){
     demoRandomness,               /* xRandomness */
     demoSleep,                    /* xSleep */
     demoCurrentTime,              /* xCurrentTime */
+    unixGetLastError,     /* xGetLastError */               \
+    unixCurrentTimeInt64, /* xCurrentTimeInt64 */           \
+    unixSetSystemCall,    /* xSetSystemCall */              \
+    unixGetSystemCall,    /* xGetSystemCall */              \
+    unixNextSystemCall,   /* xNextSystemCall */             \
   };
-  return &demovfs;
+  return &pmem_vfs;
 }
+
+
+/*
+** Initialize the operating system interface.
+**
+** This routine registers all VFS implementations for unix-like operating
+** systems.  This routine, and the sqlite3_os_end() routine that follows,
+** should be the only routines in this file that are visible from other
+** files.
+**
+** This routine is called once during SQLite initialization and by a
+** single thread.  The memory allocation and mutex subsystems have not
+** necessarily been initialized when this routine is called, and so they
+** should not be used.
+*/
+int sqlite3_pmem_init(void){ 
+  /* 
+  ** The following macro defines an initializer for an sqlite3_vfs object.
+  ** The name of the VFS is NAME.  The pAppData is a pointer to a pointer
+  ** to the "finder" function.  (pAppData is a pointer to a pointer because
+  ** silly C90 rules prohibit a void* from being cast to a function pointer
+  ** and so we have to go through the intermediate pointer to avoid problems
+  ** when compiling with -pedantic-errors on GCC.)
+  **
+  ** The FINDER parameter to this macro is the name of the pointer to the
+  ** finder-function.  The finder-function returns a pointer to the
+  ** sqlite_io_methods object that implements the desired locking
+  ** behaviors.  See the division above that contains the IOMETHODS
+  ** macro for addition information on finder-functions.
+  **
+  ** Most finders simply return a pointer to a fixed sqlite3_io_methods
+  ** object.  But the "autolockIoFinder" available on MacOSX does a little
+  ** more than that; it looks at the filesystem type that hosts the 
+  ** database file and tries to choose an locking method appropriate for
+  ** that filesystem time.
+  */
+  #define UNIXVFS(VFSNAME, FINDER) {                        \
+    1,                    /* iVersion */                    \
+    sizeof(Persistent_File),     /* szOsFile */                    \
+    MAX_PATHNAME,         /* mxPathname */                  \
+    0,                    /* pNext */                       \
+    VFSNAME,              /* zName */                       \
+    (void*)&FINDER,       /* pAppData */                    \
+    unixOpen,             /* xOpen */                       \
+    unixDelete,           /* xDelete */                     \
+    unixAccess,           /* xAccess */                     \
+    unixFullPathname,     /* xFullPathname */               \
+    unixDlOpen,           /* xDlOpen */                     \
+    unixDlError,          /* xDlError */                    \
+    unixDlSym,            /* xDlSym */                      \
+    unixDlClose,          /* xDlClose */                    \
+    unixRandomness,       /* xRandomness */                 \
+    unixSleep,            /* xSleep */                      \
+    unixCurrentTime,      /* xCurrentTime */                \
+    unixGetLastError,     /* xGetLastError */               \
+    unixCurrentTimeInt64, /* xCurrentTimeInt64 */           \
+    unixSetSystemCall,    /* xSetSystemCall */              \
+    unixGetSystemCall,    /* xGetSystemCall */              \
+    unixNextSystemCall,   /* xNextSystemCall */             \
+  }
+
+  /*
+  ** All default VFSes for unix are contained in the following array.
+  **
+  ** Note that the sqlite3_vfs.pNext field of the VFS object is modified
+  ** by the SQLite core when the VFS is registered.  So the following
+  ** array cannot be const.
+  */
+  static sqlite3_vfs aVfs[] = {
+    UNIXVFS("unix",          posixIoFinder ),
+    UNIXVFS("unix-none",     nolockIoFinder ),
+    UNIXVFS("unix-dotfile",  dotlockIoFinder ),
+    UNIXVFS("unix-excl",     posixIoFinder ),
+  };
+
+  unsigned int i;          /* Loop counter */
+
+  /* Double-check that the aSyscall[] array has been constructed
+  ** correctly.  See ticket [bb3a86e890c8e96ab] */
+  assert( ArraySize(aSyscall)==29 );
+
+  /* Register all VFSes defined in the aVfs[] array */
+  sqlite3_vfs_register(&sqlite3_pmem_vfs(),1);
+
+#ifdef SQLITE_OS_KV_OPTIONAL
+  sqlite3KvvfsInit();
+#endif
+  unixBigLock = sqlite3MutexAlloc(SQLITE_MUTEX_STATIC_VFS1);
+
+#ifndef SQLITE_OMIT_WAL
+  /* Validate lock assumptions */
+  assert( SQLITE_SHM_NLOCK==8 );  /* Number of available locks */
+  assert( UNIX_SHM_BASE==120  );  /* Start of locking area */
+  /* Locks:
+  **    WRITE       UNIX_SHM_BASE      120
+  **    CKPT        UNIX_SHM_BASE+1    121
+  **    RECOVER     UNIX_SHM_BASE+2    122
+  **    READ-0      UNIX_SHM_BASE+3    123
+  **    READ-1      UNIX_SHM_BASE+4    124
+  **    READ-2      UNIX_SHM_BASE+5    125
+  **    READ-3      UNIX_SHM_BASE+6    126
+  **    READ-4      UNIX_SHM_BASE+7    127
+  **    DMS         UNIX_SHM_BASE+8    128
+  */
+  assert( UNIX_SHM_DMS==128   );  /* Byte offset of the deadman-switch */
+#endif
+
+  /* Initialize temp file dir array. */
+  unixTempFileInit();
+
+  return SQLITE_OK; 
+}
+
+
 
 #endif /* !defined(SQLITE_TEST) || SQLITE_OS_UNIX */
 

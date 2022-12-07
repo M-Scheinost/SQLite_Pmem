@@ -30,4 +30,5 @@
 */
 #define MAXPATHNAME 512
 
+/*The only function visible from the outside*/
 sqlite3_vfs *sqlite3_pmem_vfs(void);
