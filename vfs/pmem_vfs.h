@@ -1,6 +1,7 @@
 #pragma once
 #include "../sqlite/sqlite3.h"
 #include <libpmem.h>
+#include <libpmemlog.h>
 
 #include <assert.h>
 #include <string.h>

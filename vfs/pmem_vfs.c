@@ -346,6 +346,7 @@ struct Persistent_File {
   char* pmem_file;        /*The entire pmem fiel represented as char array*/
   char *aBuffer;                  /* Pointer to malloc'd buffer */
   int nBuffer;                    /* Valid bytes of data in zBuffer */
+  PMEMlogpool *log_pool;    /* The pool for log-pmem*/
   sqlite3_int64 iBufferOfst;      /* Offset in file of zBuffer[0] */
 };
 
@@ -356,18 +357,27 @@ struct Persistent_File {
 static int pmem_direct_write(
   Persistent_File *p,                    /* File handle */
   const void *zBuf,               /* Buffer containing data to write */
-  int iAmt,                       /* Size of data to write in bytes */
-  sqlite_int64 iOfst              /* File offset to write to */
+  int amt,                       /* Size of data to write in bytes */
+  sqlite_int64 offset              /* File offset to write to */
 ){  
    printf("direct write\n");
   /*Check if one decides to write beyond the file end*/
-  if(iOfst + iAmt > PMEM_LEN){
+  if(offset + amt > PMEM_LEN){
     return SQLITE_IOERR_WRITE;
   }
 
 
+  if(p->is_pmem){
+    pmem_memcpy(p->pmem_file + offset, zBuf, amt, PMEM_F_MEM_NONTEMPORAL);
+  }
+  else{
+    memcpy(p->pmem_file, zBuf, amt);
 
-  strncpy(p->pmem_file+iOfst, (char*)zBuf, iAmt);
+  }
+
+
+
+  strncpy(p->pmem_file+offset, (char*)zBuf, amt);
 
   /*make sure the wal is always persistent*/
   if (p->is_pmem && p->is_wal)
@@ -427,7 +437,7 @@ static int pmem_read(
   int iAmt, /* the size of the buffer */
   sqlite_int64 iOfst /*the offset to read */
 ){
-   printf("read\n");
+  printf("read\n");
   Persistent_File *p = (Persistent_File*)pFile;
   off_t ofst;                     /* Return value from lseek() */
   int nRead;                      /* Return value from read() */
@@ -456,63 +466,82 @@ static int pmem_read(
   if ((pmem_addr = (char *)pmem_map_file(p->path, PMEM_LEN, PMEM_FILE_CREATE,
         0666, &mapped_len, &is_pmem)) == NULL) {
     perror("pmem_map_file");
-    exit(1);
   }
 
   strncpy((char*)zBuf, pmem_addr+iOfst, iAmt);
 
 
-  return SQLITE_IOERR_READ;
+  return SQLITE_OK;
 }
 
+
 /*
-** Write data to a crash-file.
+** Write data from a buffer into a file.  Return SQLITE_OK on success
+** or some other error code on failure.
 */
 static int pmem_write (
   sqlite3_file *pFile,
   const void *zBuf,  
-  int iAmt, 
-  sqlite_int64 iOfst
+  int amt, 
+  sqlite_int64 offset
 ){
-   printf("write\n");
+  printf("write\n");
   Persistent_File *p = (Persistent_File*)pFile;
   
-  if( p->aBuffer ){
-    char *z = (char *)zBuf;       /* Pointer to remaining data to write */
-    int n = iAmt;                 /* Number of bytes at z */
-    sqlite3_int64 i = iOfst;      /* File offset to write to */
+  assert ( pFile );
+  assert( amt > 0);
 
-    while( n>0 ){
-      int nCopy;                  /* Number of bytes to copy into buffer */
+  if(p->is_pmem){
 
-      /* If the buffer is full, or if this data is not being written directly
-      ** following the data already buffered, flush the buffer. Flushing
-      ** the buffer is a no-op if it is empty.  
-      */
-      if( p->nBuffer==SQLITE_DEMOVFS_BUFFERSZ || p->iBufferOfst+p->nBuffer!=i ){
-        int rc = pmem_flush_buffer(p);
-        if( rc!=SQLITE_OK ){
-          return rc;
-        }
-      }
-      assert( p->nBuffer==0 || p->iBufferOfst+p->nBuffer==i );
-      p->iBufferOfst = i - p->nBuffer;
-
-      /* Copy as much data as possible into the buffer. */
-      nCopy = SQLITE_DEMOVFS_BUFFERSZ - p->nBuffer;
-      if( nCopy>n ){
-        nCopy = n;
-      }
-      memcpy(&p->aBuffer[p->nBuffer], z, nCopy);
-      p->nBuffer += nCopy;
-
-      n -= nCopy;
-      i += nCopy;
-      z += nCopy;
-    }
-  }else{
-    return pmem_direct_write(p, zBuf, iAmt, iOfst);
   }
+  else{
+    if(offset < p->mapped_len){
+      if(offset + amt <= p->mapped_len){
+        memcpy(&p->pmem_file[offset], zBuf, amt);
+        return SQLITE_OK;
+      }
+    } 
+  }
+  
+
+  
+//  if( p->aBuffer ){
+//    char *z = (char *)zBuf;       /* Pointer to remaining data to write */
+//    int n = amt;                 /* Number of bytes at z */
+//    sqlite3_int64 i = offset;      /* File offset to write to */
+//
+//    while( n>0 ){
+//      int nCopy;                  /* Number of bytes to copy into buffer */
+//
+//      /* If the buffer is full, or if this data is not being written directly
+//      ** following the data already buffered, flush the buffer. Flushing
+//      ** the buffer is a no-op if it is empty.  
+//      */
+//      if( p->nBuffer==SQLITE_DEMOVFS_BUFFERSZ || p->iBufferOfst+p->nBuffer!=i ){
+//        int rc = pmem_flush_buffer(p);
+//        if( rc!=SQLITE_OK ){
+//          return rc;
+//        }
+//      }
+//      assert( p->nBuffer==0 || p->iBufferOfst+p->nBuffer==i );
+//      p->iBufferOfst = i - p->nBuffer;
+//
+//      /* Copy as much data as possible into the buffer. */
+//      nCopy = SQLITE_DEMOVFS_BUFFERSZ - p->nBuffer;
+//      if( nCopy>n ){
+//        nCopy = n;
+//      }
+//      memcpy(&p->aBuffer[p->nBuffer], z, nCopy);
+//      p->nBuffer += nCopy;
+//
+//      n -= nCopy;
+//      i += nCopy;
+//      z += nCopy;
+//    }
+//  }else{
+//    return pmem_direct_write(p, zBuf, iAmt, iOfst);
+//  }
+  
 
   return SQLITE_OK;
 }
@@ -710,9 +739,6 @@ static int pmem_open(
         0666, &p->mapped_len, &p->is_pmem)) == NULL) {
     return SQLITE_NOMEM;
   }
-
-
-
 
   if( pOutFlags ){
     *pOutFlags = flags;
