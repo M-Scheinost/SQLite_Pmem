@@ -506,12 +506,12 @@ static int pmem_write (
       else{
         /* doesn't sync changes and therefor must be synced */
         memcpy(&p->pmem_file[offset], zBuf, amt);
-        pmem_sync(p->pmem_file, p->pmem_size);
+        pmem_msync(p->pmem_file, p->pmem_size);
       }
     }
   }
-  
 
+  return SQLITE_OK;
   
 //  if( p->aBuffer ){
 //    char *z = (char *)zBuf;       /* Pointer to remaining data to write */
@@ -549,7 +549,7 @@ static int pmem_write (
 //  }else{
 //    return pmem_direct_write(p, zBuf, iAmt, iOfst);
 //  }
-  return SQLITE_OK;
+  
 }
 
 /*
@@ -570,14 +570,21 @@ static int pmem_truncate(sqlite3_file *pFile, sqlite_int64 size){
 static int pmem_sync(sqlite3_file *pFile, int flags){
   printf("pmem sync\n");
   Persistent_File *p = (Persistent_File*)pFile;
-  int rc;
-
-  rc = pmem_flush_buffer(p);
-  if( rc!=SQLITE_OK ){
-    return rc;
+  /* wal file is always written back after a write, no need to sync*/
+  if(p->is_wal){
+    return SQLITE_OK;
   }
-  /* no need for sync since flush buffer always syncs after write*/
-  return (rc==0 ? SQLITE_OK : SQLITE_IOERR_FSYNC);
+
+  /* sync file contents, don't know if this is actually needed since write always syncs but better be safe than sorry*/
+  if(p->is_pmem){
+    pmem_persist(p->pmem_file, p->pmem_size);
+  }
+  else{
+    pmem_msync(p->pmem_file, p->pmem_size);
+  }
+  return SQLITE_OK;
+
+
 }
 
 /*
