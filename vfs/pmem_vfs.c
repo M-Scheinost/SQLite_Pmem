@@ -118,6 +118,7 @@
 #include "pmem_vfs.h"
 #include <stdlib.h>
 #include <stdio.h>
+#include <sys/mman.h>
 
 /*
 ** Different Unix systems declare open() in different ways.  Same use
@@ -135,8 +136,21 @@ static int posixOpen(const char *zFile, int flags, int mode){
 static int openDirectory(const char* c, int* x){
   return SQLITE_OK;
 }
+
+/*
+** Return the system page size.
+**
+** This function should not be called directly by other code in this file. 
+** Instead, it should be called via macro osGetpagesize().
+*/
 static int unixGetpagesize(void){
-  return PMEM_LEN;
+#if OS_VXWORKS
+  return 1024;
+#elif defined(_BSD_SOURCE)
+  return getpagesize();
+#else
+  return (int)sysconf(_SC_PAGESIZE);
+#endif
 }
 
 
