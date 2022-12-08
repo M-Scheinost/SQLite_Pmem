@@ -21,9 +21,11 @@
 # define SQLITE_DEMOVFS_BUFFERSZ 8192
 #endif
 
+#define WAL_MODE 0
+
 /* This is 2^30 of pmem in bytes*/
 #ifndef PMEM_LEN
-# define PMEM_LEN 1073741824
+# define PMEM_LEN ((off_t)(1 << 30))
 #endif
 
 /*

@@ -641,7 +641,7 @@ static int pmem_device_characteristics(sqlite3_file *pFile){
 */
 static int pmem_open(
   sqlite3_vfs *pVfs,              /* VFS */
-  const char *zName,              /* File to open, or 0 for a temp file */
+  const char *file_path,              /* File to open, or 0 for a temp file */
   sqlite3_file *pFile,            /* Pointer to DemoFile struct to populate */
   int flags,                      /* Input SQLITE_OPEN_XXX flags */
   int *pOutFlags                  /* Output SQLITE_OPEN_XXX flags (or NULL) */
@@ -664,79 +664,40 @@ static int pmem_open(
   };
 
   Persistent_File *p = (Persistent_File*)pFile; /* Populate this structure */
-  
 
-  int oflags = 0;                 /* flags to pass to open() call */
-  char *aBuf = 0;
-  int eType = flags&0x0FFF00;  /* Type of file to open */
-  int noLock;                    /* True to omit locking primitives */
-  int rc = SQLITE_OK;            /* Function Return Code */
-  int ctrlFlags = 0;             /* UNIXFILE_* flags */
-
-
-  if( zName==0 ){
+  /* no tmp files allowd */
+  if( file_path == 0 ){
     return SQLITE_IOERR;
   }
 
-  if( flags&SQLITE_OPEN_MAIN_JOURNAL ){
-    aBuf = (char *)sqlite3_malloc(SQLITE_DEMOVFS_BUFFERSZ);
-    if( !aBuf ){
+  /* completly zeros p*/
+  memset(p, 0, sizeof(Persistent_File));
+
+  p->path = file_path;
+  p->pVfs = pVfs;
+  p->pMethod = &pmem_io;
+
+
+  if(WAL_MODE){
+    p->is_wal = 1;
+    
+    p->log_pool = pmemlog_create(file_path, PMEM_LEN, 0666);
+    if(p->log_pool == NULL)
+      p->log_pool = pmemlog_open(file_path);
+    
+    if(p->log_pool == NULL){
+      printf("Error wile opening pmemlog\n");
+      return SQLITE_ERROR;
+    }
+  }
+  else{
+    if ((p->pmem_file = (char *)pmem_map_file(p->path, PMEM_LEN, PMEM_FILE_CREATE,
+        0666, &p->pmem_size, &p->is_pmem)) == NULL) {
       return SQLITE_NOMEM;
     }
   }
 
-  int isExclusive  = (flags & SQLITE_OPEN_EXCLUSIVE);
-  int isDelete     = (flags & SQLITE_OPEN_DELETEONCLOSE);
-  int isCreate     = (flags & SQLITE_OPEN_CREATE);
-  int isReadonly   = (flags & SQLITE_OPEN_READONLY);
-  int isReadWrite  = (flags & SQLITE_OPEN_READWRITE);
-
-  /* Check the following statements are true: 
-  **
-  **   (a) Exactly one of the READWRITE and READONLY flags must be set, and 
-  **   (b) if CREATE is set, then READWRITE must also be set, and
-  **   (c) if EXCLUSIVE is set, then CREATE must also be set.
-  **   (d) if DELETEONCLOSE is set, then CREATE must also be set.
-  */
-  assert((isReadonly==0 || isReadWrite==0) && (isReadWrite || isReadonly));
-  assert(isCreate==0 || isReadWrite);
-  assert(isExclusive==0 || isCreate);
-  assert(isDelete==0 || isCreate);
-
-  /* The main DB, main journal, WAL file and super-journal are never 
-  ** automatically deleted. Nor are they ever temporary files.  */
-  assert( (!isDelete && zName) || eType!=SQLITE_OPEN_MAIN_DB );
-  assert( (!isDelete && zName) || eType!=SQLITE_OPEN_WAL );
-
-  /* Assert that the upper layer has set one of the "file-type" flags. */
-  assert( eType==SQLITE_OPEN_MAIN_DB      || eType==SQLITE_OPEN_TEMP_DB 
-       || eType==SQLITE_OPEN_MAIN_JOURNAL || eType==SQLITE_OPEN_TEMP_JOURNAL 
-       || eType==SQLITE_OPEN_SUBJOURNAL   || eType==SQLITE_OPEN_SUPER_JOURNAL 
-       || eType==SQLITE_OPEN_TRANSIENT_DB || eType==SQLITE_OPEN_WAL
-  );
-
-
-
-
-  /*
-  if( flags&SQLITE_OPEN_EXCLUSIVE ) oflags |= O_EXCL;
-  if( flags&SQLITE_OPEN_CREATE )    oflags |= O_CREAT;
-  if( flags&SQLITE_OPEN_READONLY )  oflags |= O_RDONLY;
-  if( flags&SQLITE_OPEN_READWRITE ) oflags |= O_RDWR;
-  */
-
-
-  /* completly zeros p*/
-  memset(p, 0, sizeof(Persistent_File));
-  p->path = zName;
-  p->pVfs = pVfs;
-  p->pMethod = &pmem_io;
-  p->aBuffer = aBuf;
-
-  if ((p->pmem_file = (char *)pmem_map_file(p->path, PMEM_LEN, PMEM_FILE_CREATE,
-        0666, &p->pmem_size, &p->is_pmem)) == NULL) {
-    return SQLITE_NOMEM;
-  }
+ 
 
   if( pOutFlags ){
     *pOutFlags = flags;
