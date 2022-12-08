@@ -342,7 +342,7 @@ struct Persistent_File {
   const char* path;       /*path of the file*/
   int is_wal;             /*1 for wal file, 0 for database file*/
   int is_pmem;            /*1 if pmem, 0 otherwise*/
-  size_t mapped_len;      /*The size of memory that was actually mapped, the pmem_file size*/
+  size_t pmem_size;      /*The size of pmem-memory that was actually mapped, the pmem_file size*/
   char* pmem_file;        /*The entire pmem fiel represented as char array*/
   char *aBuffer;                  /* Pointer to malloc'd buffer */
   int nBuffer;                    /* Valid bytes of data in zBuffer */
@@ -381,9 +381,9 @@ static int pmem_direct_write(
 
   /*make sure the wal is always persistent*/
   if (p->is_pmem && p->is_wal)
-		pmem_persist(p->pmem_file,p->mapped_len);
+		pmem_persist(p->pmem_file,p->pmem_size);
 	else
-		pmem_msync(p->pmem_file,p->mapped_len);
+		pmem_msync(p->pmem_file,p->pmem_size);
   /*
   if(pmem_unmap(pmem_addr,mapped_len)){
     return SQLITE_IOERR_WRITE;
@@ -421,7 +421,7 @@ static int pmem_close(sqlite3_file *pFile){
   sqlite3_free(p->aBuffer);
   
   if(p->is_pmem){
-    if(pmem_unmap(p->pmem_file,p->mapped_len)){
+    if(pmem_unmap(p->pmem_file,p->pmem_size)){
       return SQLITE_IOERR_WRITE;
   }
   }
@@ -496,15 +496,19 @@ static int pmem_write (
         printf("pmemlog_append: error occured\n");
         return -1;
     }
-    return SQLITE_OK;
   }
   else{
-    if(offset < p->mapped_len){
-      if(offset + amt <= p->mapped_len){
-        memcpy(&p->pmem_file[offset], zBuf, amt);
-        return SQLITE_OK;
+    if(offset + amt <= p->pmem_size){
+      if(p->is_pmem){
+        /* automatically flushes data to pmem no extra call needed*/
+        pmem_memcpy(p->pmem_file + offset, zBuf, amt, PMEM_F_MEM_NONTEMPORAL);
       }
-    } 
+      else{
+        /* doesn't sync changes and therefor must be synced */
+        memcpy(&p->pmem_file[offset], zBuf, amt);
+        pmem_sync(p->pmem_file, p->pmem_size);
+      }
+    }
   }
   
 
@@ -545,8 +549,6 @@ static int pmem_write (
 //  }else{
 //    return pmem_direct_write(p, zBuf, iAmt, iOfst);
 //  }
-  
-
   return SQLITE_OK;
 }
 
@@ -740,7 +742,7 @@ static int pmem_open(
   p->aBuffer = aBuf;
 
   if ((p->pmem_file = (char *)pmem_map_file(p->path, PMEM_LEN, PMEM_FILE_CREATE,
-        0666, &p->mapped_len, &p->is_pmem)) == NULL) {
+        0666, &p->pmem_size, &p->is_pmem)) == NULL) {
     return SQLITE_NOMEM;
   }
 
