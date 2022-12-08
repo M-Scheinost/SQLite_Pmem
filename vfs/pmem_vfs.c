@@ -50,11 +50,6 @@
 **        SQLite to use "journal_mode=truncate", or use both
 **        "journal_mode=persist" and ATTACHed databases.
 **
-**   It is assumed that the system uses UNIX-like path-names. Specifically,
-**   that '/' characters are used to separate path components and that
-**   a path-name is a relative path unless it begins with a '/'. And that
-**   no UTF-8 encoded paths are greater than 512 bytes in length.
-**
 ** JOURNAL WRITE-BUFFERING
 **
 **   To commit a transaction to the database, SQLite first writes rollback
