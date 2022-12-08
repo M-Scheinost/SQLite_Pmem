@@ -438,34 +438,9 @@ static int pmem_read(
   Persistent_File *p = (Persistent_File*)pFile;
   off_t ofst;                     /* Return value from lseek() */
   int nRead;                      /* Return value from read() */
-  int rc;                         /* Return code from demoFlushBuffer() */
 
-  /* Flush any data in the write buffer to disk in case this operation
-  ** is trying to read data the file-region currently cached in the buffer.
-  ** It would be possible to detect this case and possibly save an 
-  ** unnecessary write here, but in practice SQLite will rarely read from
-  ** a journal file when there is data cached in the write-buffer.
-  */
-  rc = pmem_flush_buffer(p);
-  if( rc!=SQLITE_OK ){
-    return rc;
-  }
+    memcpy(zBuf, p->pmem_file+iOfst, iAmt);
 
-  if(iOfst + iAmt > PMEM_LEN){
-    return SQLITE_IOERR_READ;
-  }
-
-  char *pmem_addr;
-  size_t mapped_len;
-  int is_pmem;
-
-  /* open the pmem file to read back the data */
-  if ((pmem_addr = (char *)pmem_map_file(p->path, PMEM_LEN, PMEM_FILE_CREATE,
-        0666, &mapped_len, &is_pmem)) == NULL) {
-    perror("pmem_map_file");
-  }
-
-  strncpy((char*)zBuf, pmem_addr+iOfst, iAmt);
 
 
   return SQLITE_OK;
