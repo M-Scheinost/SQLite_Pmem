@@ -1,3 +1,10 @@
+/**
+ * Author:   Manuel Scheinost
+ * created: Nov 2022
+ * 
+*/
+
+
 /*
 ** 2010 April 7
 **
@@ -10,16 +17,13 @@
 **
 *************************************************************************
 **
-** This file implements an example of a simple VFS implementation that 
-** omits complex features often not required or not possible on embedded
-** platforms.  Code is included to buffer writes to the journal file, 
-** which can be a significant performance improvement on some embedded
-** platforms.
+** This file implements simple VFS implementation for persisten memory. It 
+** omits complex features often not required. 
 **
 ** OVERVIEW
 **
-**   The code in this file implements a minimal SQLite VFS that can be 
-**   used on Linux and other posix-like operating systems. The following 
+**   The code in this file implements a SQLite VFS for perstistent memory 
+**   that can only be used on Linux operating systems. The following 
 **   system calls are used:
 **
 **    File-system: access(), unlink(), getcwd()
