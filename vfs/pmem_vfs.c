@@ -414,17 +414,15 @@ static int pmem_flush_buffer(Persistent_File *p){
 */
 static int pmem_close(sqlite3_file *pFile){
    printf("close\n");
-  int rc;
   Persistent_File *p = (Persistent_File*)pFile;
-  rc = pmem_flush_buffer(p);
-  sqlite3_free(p->aBuffer);
   
-  if(p->is_pmem){
-    if(pmem_unmap(p->pmem_file,p->pmem_size)){
-      return SQLITE_IOERR_WRITE;
+  if(p->is_wal){
+    pmemlog_close(p->log_pool);
   }
+  else{
+    pmem_unmap(p->pmem_file, p->pmem_size);
   }
-  return rc;
+  return SQLITE_OK;
 }
 
 /*
@@ -696,8 +694,6 @@ static int pmem_open(
       return SQLITE_NOMEM;
     }
   }
-
- 
 
   if( pOutFlags ){
     *pOutFlags = flags;
