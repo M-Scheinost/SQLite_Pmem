@@ -583,8 +583,6 @@ static int pmem_sync(sqlite3_file *pFile, int flags){
     pmem_msync(p->pmem_file, p->pmem_size);
   }
   return SQLITE_OK;
-
-
 }
 
 /*
@@ -593,19 +591,7 @@ static int pmem_sync(sqlite3_file *pFile, int flags){
 static int pmem_file_size(sqlite3_file *pFile, sqlite_int64 *pSize){
   printf("file size\n");
   Persistent_File *p = (Persistent_File*)pFile;
-
-  /* Flush the contents of the buffer to disk. As with the flush in the
-  ** demoRead() method, it would be possible to avoid this and save a write
-  ** here and there. But in practice this comes up so infrequently it is
-  ** not worth the trouble.
-  */
-  int rc;
-  rc = pmem_flush_buffer(p);
-  if( rc!=SQLITE_OK ){
-    return rc;
-  }
-
-  *pSize = PMEM_LEN;
+  *pSize = p->pmem_size;
   return SQLITE_OK;
 }
 
