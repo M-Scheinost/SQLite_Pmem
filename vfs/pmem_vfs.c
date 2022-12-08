@@ -610,6 +610,110 @@ static int pmem_device_characteristics(sqlite3_file *pFile){
 }
 
 /*
+** This function is called to obtain a pointer to region iRegion of the 
+** shared-memory associated with the database file fd. Shared-memory regions 
+** are numbered starting from zero. Each shared-memory region is szRegion 
+** bytes in size.
+**
+** If an error occurs, an error code is returned and *pp is set to NULL.
+**
+** Otherwise, if the bExtend parameter is 0 and the requested shared-memory
+** region has not been allocated (by any client, including one running in a
+** separate process), then *pp is set to NULL and SQLITE_OK returned. If 
+** bExtend is non-zero and the requested shared-memory region has not yet 
+** been allocated, it is allocated by this function.
+**
+** If the shared-memory region has already been allocated or is allocated by
+** this call as described above, then it is mapped into this processes 
+** address space (if it is not already), *pp is set to point to the mapped 
+** memory and SQLITE_OK returned.
+*/
+static int unixShmMap(
+  sqlite3_file *fd,               /* Handle open on database file */
+  int iRegion,                    /* Region to retrieve */
+  int szRegion,                   /* Size of regions */
+  int bExtend,                    /* True to extend file if necessary */
+  void volatile **pp              /* OUT: Mapped memory */
+){
+  return SQLITE_OK;
+}
+
+/*
+** Change the lock state for a shared-memory segment.
+**
+** Note that the relationship between SHAREd and EXCLUSIVE locks is a little
+** different here than in posix.  In xShmLock(), one can go from unlocked
+** to shared and back or from unlocked to exclusive and back.  But one may
+** not go from shared to exclusive or from exclusive to shared.
+*/
+static int unixShmLock(
+  sqlite3_file *fd,          /* Database file holding the shared memory */
+  int ofst,                  /* First lock to acquire or release */
+  int n,                     /* Number of locks to acquire or release */
+  int flags                  /* What to do with the lock */
+){
+  return SQLITE_OK;
+}
+
+/*
+** Implement a memory barrier or memory fence on shared memory.  
+**
+** All loads and stores begun before the barrier must complete before
+** any load or store begun after the barrier.
+*/
+static void unixShmBarrier(
+  sqlite3_file *fd                /* Database file holding the shared memory */
+){
+  /* not needed*/
+}
+
+/*
+** Close a connection to shared-memory.  Delete the underlying 
+** storage if deleteFlag is true.
+**
+** If there is no shared memory associated with the connection then this
+** routine is a harmless no-op.
+*/
+static int unixShmUnmap(
+  sqlite3_file *fd,               /* The underlying database file */
+  int deleteFlag                  /* Delete shared-memory if true */
+){
+  return SQLITE_OK;
+}
+
+/*
+** If possible, return a pointer to a mapping of file fd starting at offset
+** iOff. The mapping must be valid for at least nAmt bytes.
+**
+** If such a pointer can be obtained, store it in *pp and return SQLITE_OK.
+** Or, if one cannot but no error occurs, set *pp to 0 and return SQLITE_OK.
+** Finally, if an error does occur, return an SQLite error code. The final
+** value of *pp is undefined in this case.
+**
+** If this function does return a pointer, the caller must eventually 
+** release the reference by calling unixUnfetch().
+*/
+static int unixFetch(sqlite3_file *fd, sqlite3_int64 iOff, int nAmt, void **pp){
+  return SQLITE_OK;
+}
+
+/*
+** If the third argument is non-NULL, then this function releases a 
+** reference obtained by an earlier call to unixFetch(). The second
+** argument passed to this function must be the same as the corresponding
+** argument that was passed to the unixFetch() invocation. 
+**
+** Or, if the third argument is NULL, then this function is being called 
+** to inform the VFS layer that, according to POSIX, any existing mapping 
+** may now be invalid and should be unmapped.
+*/
+static int unixUnfetch(sqlite3_file *fd, sqlite3_int64 iOff, void *p){
+  return SQLITE_OK;
+}
+
+
+
+/*
 ** Open a file handle.
 */
 static int pmem_open(
@@ -633,7 +737,13 @@ static int pmem_open(
     pmem_check_reserved_lock,        /* xCheckReservedLock */
     pmem_file_control,              /* xFileControl */
     pmem_sector_size,               /* xSectorSize */
-    pmem_device_characteristics     /* xDeviceCharacteristics */
+    pmem_device_characteristics,     /* xDeviceCharacteristics */
+    unixShmMap,                     /* xShmMap */
+    unixShmLock,                /* xShmLock */
+    unixShmBarrier,             /* xShmBarrier */
+    unixShmUnmap,               /* xShmUnmap */
+    unixFetch,                  /* xFetch */
+    unixUnfetch,                /* xUnfetch */
   };
 
   Persistent_File *p = (Persistent_File*)pFile; /* Populate this structure */
