@@ -491,8 +491,12 @@ static int pmem_write (
   assert ( pFile );
   assert( amt > 0);
 
-  if(p->is_pmem){
-
+  if(p->is_pmem && p->is_wal){
+    if (pmemlog_append (p->log_pool, zBuf, amt) < 0) {
+        printf("pmemlog_append: error occured\n");
+        return -1;
+    }
+    return SQLITE_OK;
   }
   else{
     if(offset < p->mapped_len){

@@ -98,7 +98,7 @@ endif()
 #----------------------------------------------
 
 add_executable(bench ${BENCHMARK_MAIN_FILE})
-target_link_libraries(bench ${BENCHMARK_FILES} sqlite vfs Threads::Threads pmem dl m)
+target_link_libraries(bench ${BENCHMARK_FILES} sqlite vfs Threads::Threads pmem pmemlog dl m)
 
 #----------------------------------
 # build shell executable
