@@ -58,3 +58,5 @@ build
 build
 release
 Release
+Debug
+debug
