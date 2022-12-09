@@ -694,6 +694,23 @@ static int unixShmUnmap(
 ** release the reference by calling unixUnfetch().
 */
 static int unixFetch(sqlite3_file *fd, sqlite3_int64 iOff, int nAmt, void **pp){
+  #if SQLITE_MAX_MMAP_SIZE>0
+  unixFile *pFd = (unixFile *)fd;   /* The underlying database file */
+#endif
+  *pp = 0;
+
+#if SQLITE_MAX_MMAP_SIZE>0
+  if( pFd->mmapSizeMax>0 ){
+    if( pFd->pMapRegion==0 ){
+      int rc = unixMapfile(pFd, -1);
+      if( rc!=SQLITE_OK ) return rc;
+    }
+    if( pFd->mmapSize >= iOff+nAmt ){
+      *pp = &((u8 *)pFd->pMapRegion)[iOff];
+      pFd->nFetchOut++;
+    }
+  }
+#endif
   return SQLITE_OK;
 }
 
@@ -708,8 +725,30 @@ static int unixFetch(sqlite3_file *fd, sqlite3_int64 iOff, int nAmt, void **pp){
 ** may now be invalid and should be unmapped.
 */
 static int unixUnfetch(sqlite3_file *fd, sqlite3_int64 iOff, void *p){
+#if SQLITE_MAX_MMAP_SIZE>0
+  unixFile *pFd = (unixFile *)fd;   /* The underlying database file */
+
+  /* If p==0 (unmap the entire file) then there must be no outstanding 
+  ** xFetch references. Or, if p!=0 (meaning it is an xFetch reference),
+  ** then there must be at least one outstanding.  */
+  assert( (p==0)==(pFd->nFetchOut==0) );
+
+  /* If p!=0, it must match the iOff value. */
+  assert( p==0 || p==&((u8 *)pFd->pMapRegion)[iOff] );
+
+  if( p ){
+    pFd->nFetchOut--;
+  }else{
+    unixUnmapfile(pFd);
+  }
+
+  assert( pFd->nFetchOut>=0 );
+#else
+
+#endif
   return SQLITE_OK;
 }
+
 
 
 
