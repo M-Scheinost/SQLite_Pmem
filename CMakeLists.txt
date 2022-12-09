@@ -64,6 +64,7 @@ include(${CMAKE_SOURCE_DIR}/vfs/local.cmake)
 
 set(SRC_LIB_FILE ${PROJECT_SOURCE_DIR}/sqlite/sqlite${SQLITE_VER_MAJOR}.c)
 set(SRC_SHELL_FILE ${PROJECT_SOURCE_DIR}/sqlite/shell.c)
+set(SRC_TEST_FILE ${PROJECT_SOURCE_DIR}/main.c)
 
 file(GLOB HDR_FILES ${PROJECT_SOURCE_DIR}/sqlite/*.h)
 
@@ -99,6 +100,13 @@ endif()
 
 add_executable(bench ${BENCHMARK_MAIN_FILE})
 target_link_libraries(bench ${BENCHMARK_FILES} sqlite vfs Threads::Threads pmem pmemlog dl m)
+
+#----------------------------------------------
+#   build test executable
+#----------------------------------------------
+
+add_executable(test ${SRC_TEST_FILE})
+target_link_libraries(test sqlite vfs Threads::Threads pmem pmemlog dl m)
 
 #----------------------------------
 # build shell executable

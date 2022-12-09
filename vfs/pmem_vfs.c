@@ -762,7 +762,7 @@ static int pmem_open(
   int flags,                      /* Input SQLITE_OPEN_XXX flags */
   int *pOutFlags                  /* Output SQLITE_OPEN_XXX flags (or NULL) */
 ){
-  printf("open\n");
+  printf("open database: %s\n", file_path);
   static const sqlite3_io_methods pmem_io = {
     1,                            /* iVersion */
     pmem_close,                    /* xClose */
