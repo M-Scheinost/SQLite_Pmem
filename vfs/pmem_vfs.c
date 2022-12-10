@@ -343,15 +343,15 @@ struct Persistent_File {
   int is_pmem;            /*1 if pmem, 0 otherwise*/
   size_t pmem_size;      /*The size of pmem-memory that was actually mapped, the pmem_file size*/
   char* pmem_file;        /*The entire pmem fiel represented as char array*/
-  char *aBuffer;                  /* Pointer to malloc'd buffer */
-  int nBuffer;                    /* Valid bytes of data in zBuffer */
+  char *buffer;                  /* Pointer to malloc'd buffer */
+  int buffer_size;                    /* Valid bytes of data in zBuffer */
   PMEMlogpool *log_pool;    /* The pool for log-pmem*/
   sqlite3_int64 iBufferOfst;      /* Offset in file of zBuffer[0] */
 };
 
 /*
 ** Write directly to the file passed as the first argument. Even if the
-** file has a write-buffer (Persistent_File.aBuffer), ignore it.
+** file has a write-buffer (Persistent_File.buffer), ignore it.
 */
 static int pmem_direct_write(
   Persistent_File *p,                    /* File handle */
@@ -392,17 +392,17 @@ static int pmem_direct_write(
 }
 
 /*
-** Flush the contents of the aBuffer buffer to disk. This is a
+** Flush the contents of the buffer buffer to disk. This is a
 ** no-op if this particular file does not have a buffer (i.e. it is not
 ** a journal file) or if the buffer is currently empty.
 */
 static int pmem_flush_buffer(Persistent_File *p){
    printf("flush buffer\n");
   int rc = SQLITE_OK;
-  printf("%i\n", p->nBuffer);
-  if( p->nBuffer ){
-    rc = pmem_direct_write(p, p->aBuffer, p->nBuffer, p->iBufferOfst);
-    p->nBuffer = 0;
+  printf("%i\n", p->buffer_size);
+  if( p->buffer_size ){
+    rc = pmem_direct_write(p, p->buffer, p->buffer_size, p->iBufferOfst);
+    p->buffer_size = 0;
   }
   return rc;
 }
@@ -485,7 +485,7 @@ static int pmem_write (
 
   return SQLITE_OK;
   
-//  if( p->aBuffer ){
+//  if( p->buffer ){
 //    char *z = (char *)zBuf;       /* Pointer to remaining data to write */
 //    int n = amt;                 /* Number of bytes at z */
 //    sqlite3_int64 i = offset;      /* File offset to write to */
@@ -497,22 +497,22 @@ static int pmem_write (
 //      ** following the data already buffered, flush the buffer. Flushing
 //      ** the buffer is a no-op if it is empty.  
 //      */
-//      if( p->nBuffer==SQLITE_DEMOVFS_BUFFERSZ || p->iBufferOfst+p->nBuffer!=i ){
+//      if( p->buffer_size==SQLITE_DEMOVFS_BUFFERSZ || p->iBufferOfst+p->buffer_size!=i ){
 //        int rc = pmem_flush_buffer(p);
 //        if( rc!=SQLITE_OK ){
 //          return rc;
 //        }
 //      }
-//      assert( p->nBuffer==0 || p->iBufferOfst+p->nBuffer==i );
-//      p->iBufferOfst = i - p->nBuffer;
+//      assert( p->buffer_size==0 || p->iBufferOfst+p->buffer_size==i );
+//      p->iBufferOfst = i - p->buffer_size;
 //
 //      /* Copy as much data as possible into the buffer. */
-//      nCopy = SQLITE_DEMOVFS_BUFFERSZ - p->nBuffer;
+//      nCopy = SQLITE_DEMOVFS_BUFFERSZ - p->buffer_size;
 //      if( nCopy>n ){
 //        nCopy = n;
 //      }
-//      memcpy(&p->aBuffer[p->nBuffer], z, nCopy);
-//      p->nBuffer += nCopy;
+//      memcpy(&p->buffer[p->buffer_size], z, nCopy);
+//      p->buffer_size += nCopy;
 //
 //      n -= nCopy;
 //      i += nCopy;
@@ -758,7 +758,7 @@ static int unixUnfetch(sqlite3_file *fd, sqlite3_int64 iOff, void *p){
 static int pmem_open(
   sqlite3_vfs *pVfs,              /* VFS */
   const char *file_path,              /* File to open, or 0 for a temp file */
-  sqlite3_file *pFile,            /* Pointer to DemoFile struct to populate */
+  sqlite3_file *pFile,            /* Pointer to Persistent_file struct to populate */
   int flags,                      /* Input SQLITE_OPEN_XXX flags */
   int *pOutFlags                  /* Output SQLITE_OPEN_XXX flags (or NULL) */
 ){
@@ -798,7 +798,10 @@ static int pmem_open(
   p->path = file_path;
   p->pVfs = pVfs;
   p->pMethod = &pmem_io;
+  p->buffer_size = PMEM_BUFFER_SIZE;
+  p->buffer = malloc(p->buffer_size);
 
+printf("OPEN_FLAGS:\t%i\n", flags);
 
   if(WAL_MODE){
     p->is_wal = 1;

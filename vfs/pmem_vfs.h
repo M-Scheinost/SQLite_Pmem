@@ -18,8 +18,8 @@
 /*
 ** Size of the write buffer used by journal files in bytes.
 */
-#ifndef SQLITE_DEMOVFS_BUFFERSZ
-# define SQLITE_DEMOVFS_BUFFERSZ 8192
+#ifndef PMEM_BUFFER_SIZE
+# define PMEM_BUFFER_SIZE 8192
 #endif
 
 #define WAL_MODE 0
