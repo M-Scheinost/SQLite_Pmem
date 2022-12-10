@@ -813,8 +813,9 @@ static int pmem_open(
     }
   }
   else{
+    // 666 = rw-rw-rw
     if ((p->pmem_file = (char *)pmem_map_file(p->path, PMEM_LEN, PMEM_FILE_CREATE,
-        0666, &p->pmem_size, &p->is_pmem)) == NULL) {
+        0644, &p->pmem_size, &p->is_pmem)) == NULL) {
       return SQLITE_NOMEM;
     }
   }
