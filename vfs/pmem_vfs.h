@@ -26,7 +26,7 @@
 
 /* This is 2^30 of pmem in bytes*/
 #ifndef PMEM_LEN
-# define PMEM_LEN ((off_t)(1 << 30))
+# define PMEM_LEN ((off_t)(1 << 13))
 #endif
 
 /*
