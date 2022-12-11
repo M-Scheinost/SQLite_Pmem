@@ -430,16 +430,22 @@ static int pmem_close(sqlite3_file *pFile){
 */
 static int pmem_read(
   sqlite3_file *pFile,  /* the file*/
-  void *zBuf, /* the buffer to write the value to */
-  int iAmt, /* the size of the buffer */
-  sqlite_int64 iOfst /*the offset to read */
+  void *buffer, /* the buffer to write the value to */
+  int buffer_size, /* the size of the buffer */
+  sqlite_int64 offset /*the offset to read */
 ){
   printf("read\n");
   Persistent_File *p = (Persistent_File*)pFile;
   off_t ofst;                     /* Return value from lseek() */
   int nRead;                      /* Return value from read() */
 
-    memcpy(zBuf, p->pmem_file+iOfst, iAmt);
+  if(offset + buffer_size < p->pmem_size){
+    memcpy(buffer, &((u_int8_t *) (p->pmem_file))[offset], buffer_size);
+  }
+  else{
+    return SQLITE_IOERR_SHORT_READ;
+  }
+    
 
 
 
@@ -601,8 +607,8 @@ static int pmem_file_control(sqlite3_file *pFile, int op, void *pArg){
 ** access to some extent. But it is also safe to simply return 0.
 */
 static int pmem_sector_size(sqlite3_file *pFile){
-  printf("sector size\n");
-  return 0;
+  /* 4096 is standard unix sector size*/
+  return 512;
 }
 static int pmem_device_characteristics(sqlite3_file *pFile){
   printf("device characteristics\n");
@@ -764,7 +770,7 @@ static int pmem_open(
 ){
   printf("open database: %s\n", file_path);
   static const sqlite3_io_methods pmem_io = {
-    1,                            /* iVersion */
+    3,                            /* iVersion */
     pmem_close,                    /* xClose */
     pmem_read,                     /* xRead */
     pmem_write,                    /* xWrite */
@@ -816,9 +822,13 @@ printf("OPEN_FLAGS:\t%i\n", flags);
     }
   }
   else{
+    FILE *f = fopen(p->path, "w");
+    if(f == NULL){
+      return SQLITE_ERROR;
+    }
     // 666 = rw-rw-rw
     if ((p->pmem_file = (char *)pmem_map_file(p->path, PMEM_LEN, PMEM_FILE_CREATE,
-        0644, &p->pmem_size, &p->is_pmem)) == NULL) {
+        0666, &p->pmem_size, &p->is_pmem)) == NULL) {
       return SQLITE_NOMEM;
     }
   }
@@ -1127,7 +1137,7 @@ static int unixCurrentTimeInt64(sqlite3_vfs *NotUsed, sqlite3_int64 *piNow){
 */
 sqlite3_vfs *sqlite3_pmem_vfs(void){
   static sqlite3_vfs pmem_vfs = {
-    1,                            /* iVersion */
+    3,                            /* iVersion */
     sizeof(Persistent_File),             /* szOsFile */
     MAXPATHNAME,                  /* mxPathname */
     0,                            /* pNext */
@@ -1144,11 +1154,11 @@ sqlite3_vfs *sqlite3_pmem_vfs(void){
     demoRandomness,               /* xRandomness */
     unixSleep,                    /* xSleep */
     demoCurrentTime,              /* xCurrentTime */
-    unixGetLastError,     /* xGetLastError */               \
-    unixCurrentTimeInt64, /* xCurrentTimeInt64 */           \
-    unixSetSystemCall,    /* xSetSystemCall */              \
-    unixGetSystemCall,    /* xGetSystemCall */              \
-    unixNextSystemCall,   /* xNextSystemCall */             \
+    unixGetLastError,     /* xGetLastError */
+    unixCurrentTimeInt64, /* xCurrentTimeInt64 */
+    unixSetSystemCall,    /* xSetSystemCall */
+    unixGetSystemCall,    /* xGetSystemCall */
+    unixNextSystemCall,   /* xNextSystemCall */
   };
   return &pmem_vfs;
 }
