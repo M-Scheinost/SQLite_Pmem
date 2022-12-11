@@ -341,73 +341,16 @@ struct Persistent_File {
   const char* path;       /*path of the file*/
   int is_wal;             /*1 for wal file, 0 for database file*/
   int is_pmem;            /*1 if pmem, 0 otherwise*/
+  size_t used_size;     /* the size which got used */
   size_t pmem_size;      /*The size of pmem-memory that was actually mapped, the pmem_file size*/
   char* pmem_file;        /*The entire pmem fiel represented as char array*/
-  char *buffer;                  /* Pointer to malloc'd buffer */
-  int buffer_size;                    /* Valid bytes of data in zBuffer */
-  PMEMlogpool *log_pool;    /* The pool for log-pmem*/
-  sqlite3_int64 iBufferOfst;      /* Offset in file of zBuffer[0] */
+  PMEMlogpool *log_pool;    /* The pool for log-pmem */
 };
 
-/*
-** Write directly to the file passed as the first argument. Even if the
-** file has a write-buffer (Persistent_File.buffer), ignore it.
-*/
-static int pmem_direct_write(
-  Persistent_File *p,                    /* File handle */
-  const void *zBuf,               /* Buffer containing data to write */
-  int amt,                       /* Size of data to write in bytes */
-  sqlite_int64 offset              /* File offset to write to */
-){  
-   printf("direct write\n");
-  /*Check if one decides to write beyond the file end*/
-  if(offset + amt > PMEM_LEN){
-    return SQLITE_IOERR_WRITE;
-  }
 
 
-  if(p->is_pmem){
-    pmem_memcpy(p->pmem_file + offset, zBuf, amt, PMEM_F_MEM_NONTEMPORAL);
-  }
-  else{
-    memcpy(p->pmem_file, zBuf, amt);
-
-  }
-
-
-
-  strncpy(p->pmem_file+offset, (char*)zBuf, amt);
-
-  /*make sure the wal is always persistent*/
-  if (p->is_pmem && p->is_wal)
-		pmem_persist(p->pmem_file,p->pmem_size);
-	else
-		pmem_msync(p->pmem_file,p->pmem_size);
-  /*
-  if(pmem_unmap(pmem_addr,mapped_len)){
-    return SQLITE_IOERR_WRITE;
-  }
-  */
-  return SQLITE_OK;
-}
 
 /*
-** Flush the contents of the buffer buffer to disk. This is a
-** no-op if this particular file does not have a buffer (i.e. it is not
-** a journal file) or if the buffer is currently empty.
-*/
-static int pmem_flush_buffer(Persistent_File *p){
-   printf("flush buffer\n");
-  int rc = SQLITE_OK;
-  printf("%i\n", p->buffer_size);
-  if( p->buffer_size ){
-    rc = pmem_direct_write(p, p->buffer, p->buffer_size, p->iBufferOfst);
-    p->buffer_size = 0;
-  }
-  return rc;
-}
-
-/**
  * writes the buffer to pmem
  * no need to close anything since mappings are unmapped after writing
  * this function just frees the buffer
@@ -804,8 +747,6 @@ static int pmem_open(
   p->path = file_path;
   p->pVfs = pVfs;
   p->pMethod = &pmem_io;
-  p->buffer_size = PMEM_BUFFER_SIZE;
-  p->buffer = malloc(p->buffer_size);
 
 printf("OPEN_FLAGS:\t%i\n", flags);
 
@@ -822,10 +763,14 @@ printf("OPEN_FLAGS:\t%i\n", flags);
     }
   }
   else{
+
+    /* ignoring existing files here */
     FILE *f = fopen(p->path, "w");
     if(f == NULL){
       return SQLITE_ERROR;
     }
+    fclose(f);
+    p->used_size = 0;
     // 666 = rw-rw-rw
     if ((p->pmem_file = (char *)pmem_map_file(p->path, PMEM_LEN, PMEM_FILE_CREATE,
         0666, &p->pmem_size, &p->is_pmem)) == NULL) {

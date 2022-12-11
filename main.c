@@ -2,6 +2,7 @@
 #include "vfs/pmem_vfs.h"
 #include "vfs/test_demovfs.h"
 #include "stdio.h"
+
 static int callback(void *NotUsed, int argc, char **argv, char **azColName){
   int i;
   for(i=0; i<argc; i++){
@@ -39,16 +40,17 @@ void test_normal(){
 
 void test_pmem(){
   sqlite3 *sqlite;
-    sqlite3_vfs_register(sqlite3_demovfs(), 1);
+    sqlite3_vfs_register(sqlite3_pmem_vfs(), 1);
 
     char* err_msg = NULL;
 
     int status = sqlite3_open("pmem.db", &sqlite);
     printf("STATUS:\t%i\n", status);
     /* Default cache size is a combined 4 MB */
-    char* WAL_stmt = "PRAGMA journal_mode = WAL";
-    status = sqlite3_exec(sqlite, WAL_stmt, NULL, NULL, &err_msg);
-    printf("STATUS:\t%i\n", status);
+    
+    // char* WAL_stmt = "PRAGMA journal_mode = WAL";
+    // status = sqlite3_exec(sqlite, WAL_stmt, NULL, NULL, &err_msg);
+    // printf("STATUS:\t%i\n", status);
 
     char* create_stmt = "create table test (key integer, value integer);";
     status = sqlite3_exec(sqlite, create_stmt, callback, NULL, &err_msg);
