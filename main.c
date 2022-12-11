@@ -1,5 +1,6 @@
 #include "sqlite/sqlite3.h"
 #include "vfs/pmem_vfs.h"
+#include "vfs/test_demovfs.h"
 #include "stdio.h"
 static int callback(void *NotUsed, int argc, char **argv, char **azColName){
   int i;
@@ -33,12 +34,12 @@ void test_normal(){
   //status = sqlite3_exec(sqlite, select_stmt, callback, NULL, &err_msg);
 
   status = sqlite3_close(sqlite);
-  printf("STATUS:\t%i\n", status);
+  printf("STATUS:\t%i\nNormal ende\n", status);
 }
 
 void test_pmem(){
   sqlite3 *sqlite;
-    sqlite3_vfs_register(sqlite3_pmem_vfs(), 1);
+    sqlite3_vfs_register(sqlite3_demovfs(), 1);
 
     char* err_msg = NULL;
 
