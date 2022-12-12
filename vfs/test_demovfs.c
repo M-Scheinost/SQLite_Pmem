@@ -127,6 +127,7 @@
 #include <time.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <stdio.h>
 
 /*
 ** Size of the write buffer used by journal files in bytes.
@@ -198,6 +199,7 @@ static int demoFlushBuffer(DemoFile *p){
 ** Close a file.
 */
 static int demoClose(sqlite3_file *pFile){
+  printf("Close\n");
   int rc;
   DemoFile *p = (DemoFile*)pFile;
   rc = demoFlushBuffer(p);
@@ -215,6 +217,7 @@ static int demoRead(
   int iAmt, 
   sqlite_int64 iOfst
 ){
+  printf("Read\n");
   DemoFile *p = (DemoFile*)pFile;
   off_t ofst;                     /* Return value from lseek() */
   int nRead;                      /* Return value from read() */
@@ -258,6 +261,7 @@ static int demoWrite(
   int iAmt, 
   sqlite_int64 iOfst
 ){
+  printf("Write\n");
   DemoFile *p = (DemoFile*)pFile;
   
   if( p->aBuffer ){
@@ -305,6 +309,7 @@ static int demoWrite(
 ** the top of the file).
 */
 static int demoTruncate(sqlite3_file *pFile, sqlite_int64 size){
+  printf("Truncate\n");
 #if 0
   if( ftruncate(((DemoFile *)pFile)->fd, size) ) return SQLITE_IOERR_TRUNCATE;
 #endif
@@ -315,6 +320,7 @@ static int demoTruncate(sqlite3_file *pFile, sqlite_int64 size){
 ** Sync the contents of the file to the persistent media.
 */
 static int demoSync(sqlite3_file *pFile, int flags){
+  printf("Sync\n");
   DemoFile *p = (DemoFile*)pFile;
   int rc;
 
@@ -331,6 +337,7 @@ static int demoSync(sqlite3_file *pFile, int flags){
 ** Write the size of the file in bytes to *pSize.
 */
 static int demoFileSize(sqlite3_file *pFile, sqlite_int64 *pSize){
+  printf("File Size\n");
   DemoFile *p = (DemoFile*)pFile;
   int rc;                         /* Return code from fstat() call */
   struct stat sStat;              /* Output of fstat() call */
@@ -358,12 +365,15 @@ static int demoFileSize(sqlite3_file *pFile, sqlite_int64 *pSize){
 ** file is found in the file-system it is rolled back.
 */
 static int demoLock(sqlite3_file *pFile, int eLock){
+  printf("Lock\n");
   return SQLITE_OK;
 }
 static int demoUnlock(sqlite3_file *pFile, int eLock){
+  printf("Unlock\n");
   return SQLITE_OK;
 }
 static int demoCheckReservedLock(sqlite3_file *pFile, int *pResOut){
+  printf("Check reserved lock\n");
   *pResOut = 0;
   return SQLITE_OK;
 }
@@ -372,6 +382,7 @@ static int demoCheckReservedLock(sqlite3_file *pFile, int *pResOut){
 ** No xFileControl() verbs are implemented by this VFS.
 */
 static int demoFileControl(sqlite3_file *pFile, int op, void *pArg){
+  printf(" File-control\n");
   return SQLITE_NOTFOUND;
 }
 
@@ -381,9 +392,11 @@ static int demoFileControl(sqlite3_file *pFile, int op, void *pArg){
 ** access to some extent. But it is also safe to simply return 0.
 */
 static int demoSectorSize(sqlite3_file *pFile){
+  printf("SectorSize\n");
   return 0;
 }
 static int demoDeviceCharacteristics(sqlite3_file *pFile){
+  printf("Device Characteristics\n");
   return 0;
 }
 
@@ -397,6 +410,7 @@ static int demoOpen(
   int flags,                      /* Input SQLITE_OPEN_XXX flags */
   int *pOutFlags                  /* Output SQLITE_OPEN_XXX flags (or NULL) */
 ){
+  printf("Open\n");
   static const sqlite3_io_methods demoio = {
     1,                            /* iVersion */
     demoClose,                    /* xClose */
@@ -455,7 +469,7 @@ static int demoOpen(
 */
 static int demoDelete(sqlite3_vfs *pVfs, const char *zPath, int dirSync){
   int rc;                         /* Return code */
-
+  printf("Delete\n");
   rc = unlink(zPath);
   if( rc!=0 && errno==ENOENT ) return SQLITE_OK;
 
@@ -504,6 +518,7 @@ static int demoAccess(
   int flags, 
   int *pResOut
 ){
+  printf("Acces\n");
   int rc;                         /* access() return code */
   int eAccess = F_OK;             /* Second argument to access() */
 
