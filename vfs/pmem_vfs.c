@@ -335,8 +335,7 @@ static struct unix_syscall {
 typedef struct Persistent_File Persistent_File;
 
 struct Persistent_File {
-  sqlite3_io_methods const *pMethod;  /* Always the first entry */
-  sqlite3_vfs *pVfs;                  /* The VFS that created this unixFile */
+ sqlite3_file base;                  /* Base class. Must be first. */
 
   const char* path;       /*path of the file*/
   int is_wal;             /*1 for wal file, 0 for database file*/
@@ -512,7 +511,7 @@ static int pmem_sync(sqlite3_file *pFile, int flags){
 static int pmem_file_size(sqlite3_file *pFile, sqlite_int64 *pSize){
   printf("file size\n");
   Persistent_File *p = (Persistent_File*)pFile;
-  *pSize = p->pmem_size;
+  *pSize = p->used_size;
   return SQLITE_OK;
 }
 
@@ -745,8 +744,9 @@ static int pmem_open(
   memset(p, 0, sizeof(Persistent_File));
 
   p->path = file_path;
-  p->pVfs = pVfs;
-  p->pMethod = &pmem_io;
+  p->base.pMethods = &pmem_io;
+  //p->pVfs = pVfs;
+  //p->pMethod = &pmem_io;
 
 printf("OPEN_FLAGS:\t%i\n", flags);
 
