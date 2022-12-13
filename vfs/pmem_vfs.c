@@ -358,7 +358,7 @@ static int pmem_close(sqlite3_file *pFile){
    printf("close\n");
   Persistent_File *p = (Persistent_File*)pFile;
   
-  if(p->is_wal){
+  if(PMEMLOG_ACTIVATED){
     pmemlog_close(p->log_pool);
   }
   else{
@@ -411,7 +411,7 @@ static int pmem_write (
   assert ( pFile );
   assert( buffer_size > 0);
 
-  if(p->is_pmem && p->is_wal){
+  if(PMEMLOG_ACTIVATED){
     if (pmemlog_append (p->log_pool, buffer, buffer_size) < 0) {
         printf("pmemlog_append: error occured\n");
         return -1;
@@ -491,7 +491,7 @@ static int pmem_sync(sqlite3_file *pFile, int flags){
   printf("pmem sync\n");
   Persistent_File *p = (Persistent_File*)pFile;
   /* wal file is always written back after a write, no need to sync*/
-  if(p->is_wal){
+  if(PMEMLOG_ACTIVATED){
     return SQLITE_OK;
   }
 
@@ -750,7 +750,13 @@ static int pmem_open(
 
 printf("OPEN_FLAGS:\t%i\n", flags);
 
-  if(WAL_MODE){
+  p->is_wal = flags & SQLITE_OPEN_WAL;
+  
+  //if(p->is_wal){
+  //  p->path = "/mnt/pmem0/scheinost/database.db-wal";
+  //}
+
+  if(PMEMLOG_ACTIVATED){
     p->is_wal = 1;
     
     p->log_pool = pmemlog_create(file_path, PMEM_LEN, 0666);
@@ -763,7 +769,6 @@ printf("OPEN_FLAGS:\t%i\n", flags);
     }
   }
   else{
-
     /* ignoring existing files here */
     FILE *f = fopen(p->path, "w");
     if(f == NULL){

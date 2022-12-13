@@ -48,9 +48,9 @@ void test_pmem(){
   printf("STATUS:\t%i\n", status);
   /* Default cache size is a combined 4 MB */
     
-  char* WAL_stmt = "PRAGMA journal_mode = WAL";
-  status = sqlite3_exec(sqlite, WAL_stmt, NULL, NULL, &err_msg);
-  printf("STATUS:\t%i\n", status);
+  //char* WAL_stmt = "PRAGMA journal_mode = WAL";
+  //status = sqlite3_exec(sqlite, WAL_stmt, NULL, NULL, &err_msg);
+  //printf("STATUS:\t%i\n", status);
 
   char* create_stmt = "create table test (key integer, value integer);";
   status = sqlite3_exec(sqlite, create_stmt, callback, NULL, &err_msg);
@@ -97,7 +97,7 @@ void test_demo(){
 
 int main (int argc, char** argv){
 
-  //test_normal();
+  test_normal();
   //test_demo();
   test_pmem();
 }

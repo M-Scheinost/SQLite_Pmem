@@ -22,7 +22,7 @@
 # define PMEM_BUFFER_SIZE 8192
 #endif
 
-#define WAL_MODE 0
+#define PMEMLOG_ACTIVATED 0
 
 /* This is 2^30 of pmem in bytes*/
 #ifndef PMEM_LEN
