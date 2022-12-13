@@ -382,7 +382,7 @@ static int pmem_read(
   int nRead;                      /* Return value from read() */
 
   if(offset + buffer_size < p->pmem_size){
-    memcpy(buffer, &((u_int8_t *) (p->pmem_file))[offset], buffer_size);
+    memcpy(buffer,p->pmem_file+ offset, buffer_size);
   }
   else{
     return SQLITE_IOERR_SHORT_READ;
@@ -401,31 +401,31 @@ static int pmem_read(
 */
 static int pmem_write (
   sqlite3_file *pFile,
-  const void *zBuf,  
-  int amt, 
+  const void *buffer,  
+  int buffer_size, 
   sqlite_int64 offset
 ){
   printf("write\n");
   Persistent_File *p = (Persistent_File*)pFile;
   
   assert ( pFile );
-  assert( amt > 0);
+  assert( buffer_size > 0);
 
   if(p->is_pmem && p->is_wal){
-    if (pmemlog_append (p->log_pool, zBuf, amt) < 0) {
+    if (pmemlog_append (p->log_pool, buffer, buffer_size) < 0) {
         printf("pmemlog_append: error occured\n");
         return -1;
     }
   }
   else{
-    if(offset + amt <= p->pmem_size){
+    if(offset + buffer_size <= p->pmem_size){
       if(p->is_pmem){
         /* automatically flushes data to pmem no extra call needed*/
-        pmem_memcpy(p->pmem_file + offset, zBuf, amt, PMEM_F_MEM_NONTEMPORAL);
+        pmem_memcpy(p->pmem_file + offset, buffer, buffer_size, PMEM_F_MEM_NONTEMPORAL);
       }
       else{
         /* doesn't sync changes and therefor must be synced */
-        memcpy(&p->pmem_file[offset], zBuf, amt);
+        memcpy(&p->pmem_file[offset], buffer, buffer_size);
         pmem_msync(p->pmem_file, p->pmem_size);
       }
     }

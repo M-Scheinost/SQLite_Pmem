@@ -410,7 +410,7 @@ static int demoOpen(
   int flags,                      /* Input SQLITE_OPEN_XXX flags */
   int *pOutFlags                  /* Output SQLITE_OPEN_XXX flags (or NULL) */
 ){
-  printf("Open\n");
+  printf("Open file:\t%s\n", zName);
   static const sqlite3_io_methods demoio = {
     1,                            /* iVersion */
     demoClose,                    /* xClose */
