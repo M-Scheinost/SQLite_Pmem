@@ -328,6 +328,12 @@ static struct unix_syscall {
 }; /* End of the overrideable system calls */
 
 
+/* Forward references */
+typedef struct unixShm unixShm;               /* Connection shared memory */
+typedef struct unixShmNode unixShmNode;       /* Shared memory instance */
+typedef struct unixInodeInfo unixInodeInfo;   /* An i-node */
+
+
 /*
 ** When using this VFS, the sqlite3_file* handles that SQLite uses are
 ** actually pointers to instances of type Persistent_File.
@@ -344,10 +350,40 @@ struct Persistent_File {
   size_t pmem_size;      /*The size of pmem-memory that was actually mapped, the pmem_file size*/
   char* pmem_file;        /*The entire pmem fiel represented as char array*/
   PMEMlogpool *log_pool;    /* The pool for log-pmem */
+  char* shm_file;     /* the wal-index file*/
+  size_t shm_size;    /* size of the wal-index file*/
+  size_t shm_used;    /* used mem of wal-index */
+  int shm_is_pmem;
 };
 
 
+/*
+** Structure used internally by this VFS to record the state of an
+** open shared memory connection.
+**
+** The following fields are initialized when this object is created and
+** are read-only thereafter:
+**
+**    unixShm.pShmNode
+**    unixShm.id
+**
+** All other fields are read/write.  The unixShm.pShmNode->pShmMutex must
+** be held while accessing any read/write fields.
+*/
+struct unixShm {
+  unixShmNode *pShmNode;     /* The underlying unixShmNode object */
+  unixShm *pNext;            /* Next unixShm with the same unixShmNode */
+  u8 hasMutex;               /* True if holding the unixShmNode->pShmMutex */
+  u8 id;                     /* Id of this connection within its unixShmNode */
+  u16 sharedMask;            /* Mask of shared locks held */
+  u16 exclMask;              /* Mask of exclusive locks held */
+};
 
+/*
+** Constants used for locking
+*/
+#define UNIX_SHM_BASE   ((22+SQLITE_SHM_NLOCK)*4)         /* first lock byte */
+#define UNIX_SHM_DMS    (UNIX_SHM_BASE+SQLITE_SHM_NLOCK)  /* deadman switch */
 
 /*
  * writes the buffer to pmem
@@ -557,6 +593,51 @@ static int pmem_device_characteristics(sqlite3_file *pFile){
   return 0;
 }
 
+
+/**
+ * opens the shm file
+*/
+static int unixOpenSharedMemory(Persistent_File *p){
+
+  // TODO check for existing file
+
+  /* no tmp files allowd */
+  if(p->path == 0 ){
+    return SQLITE_IOERR;
+  }
+  
+  int path_length = strlen(p->path);
+  char shm_path[path_length + 4];
+  memcpy(shm_path, p->path, path_length);
+  shm_path[path_length + 4] = '\0';
+  shm_path[path_length + 3] = 'm';
+  shm_path[path_length + 2] = 'h';
+  shm_path[path_length + 1] = 's';
+  shm_path[path_length] = '-';
+
+  printf("shm-path:\t%s\n", shm_path);
+  
+  /* ignoring existing files here */
+  FILE *f = fopen(shm_path, "w");
+  if(f == NULL){
+    return SQLITE_ERROR;
+  }
+  fclose(f);
+  p->used_size = 0;
+  // 666 = rw-rw-rw
+  if ((p->shm_file = (char *)pmem_map_file(shm_path, PMEM_LEN, PMEM_FILE_CREATE,
+      0666, &p->shm_size, &p->shm_is_pmem)) == NULL) {
+    return SQLITE_NOMEM;
+  
+  }
+
+  printf("open finished\n");
+  return SQLITE_OK;
+
+
+
+}
+
 /*
 ** This function is called to obtain a pointer to region iRegion of the 
 ** shared-memory associated with the database file fd. Shared-memory regions 
@@ -583,7 +664,8 @@ static int unixShmMap(
   int bExtend,                    /* True to extend file if necessary */
   void volatile **pp              /* OUT: Mapped memory */
 ){
-  return SQLITE_OK;
+  printf("shm-map\n");
+  return 0;
 }
 
 /*
@@ -612,7 +694,12 @@ static int unixShmLock(
 static void unixShmBarrier(
   sqlite3_file *fd                /* Database file holding the shared memory */
 ){
-  /* not needed*/
+  printf("shm-barrier");
+
+  // sqlite3MemoryBarrier();         /* compiler-defined memory barrier */
+  // assert( fd->pMethods->xLock==nolockLock 
+  //      || unixFileMutexNotheld((Persistent_File*)fd) 
+  // );
 }
 
 /*
@@ -626,6 +713,7 @@ static int unixShmUnmap(
   sqlite3_file *fd,               /* The underlying database file */
   int deleteFlag                  /* Delete shared-memory if true */
 ){
+  printf("shm-unmap\n");
   return SQLITE_OK;
 }
 
@@ -786,6 +874,8 @@ printf("OPEN_FLAGS:\t%i\n", flags);
   if( pOutFlags ){
     *pOutFlags = flags;
   }
+
+  unixOpenSharedMemory(p);
 
   printf("open finished\n");
   return SQLITE_OK;
