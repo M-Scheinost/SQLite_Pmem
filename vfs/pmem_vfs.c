@@ -673,13 +673,13 @@ static int pmem_map_shm(
       pmem_open_shm(p);
     }
     else{
-      pp = 0;
+      *pp = 0;
     return SQLITE_OK;
     } 
   }
 
   if(region_size * region_number < p->shm_size){
-    pp = (volatile void**)p->shm_file + (region_number*region_size);
+    *pp = (volatile void**)p->shm_file + (region_number*region_size);
   }
 
   // if(offset + buffer_size > p->used_size){
