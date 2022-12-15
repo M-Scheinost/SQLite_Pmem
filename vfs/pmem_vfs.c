@@ -465,6 +465,8 @@ static int pmem_write (
     p->used_size = offset + buffer_size;
   }
 
+  
+
   return SQLITE_OK;
   
 //  if( p->buffer ){
