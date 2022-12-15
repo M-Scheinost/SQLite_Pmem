@@ -414,8 +414,6 @@ static int pmem_read(
 ){
   printf("read\n");
   Persistent_File *p = (Persistent_File*)pFile;
-  off_t ofst;                     /* Return value from lseek() */
-  int nRead;                      /* Return value from read() */
 
   if(offset + buffer_size < p->pmem_size){
     memcpy(buffer,p->pmem_file+ offset, buffer_size);
@@ -423,10 +421,6 @@ static int pmem_read(
   else{
     return SQLITE_IOERR_SHORT_READ;
   }
-    
-
-
-
   return SQLITE_OK;
 }
 
@@ -465,6 +459,10 @@ static int pmem_write (
         pmem_msync(p->pmem_file, p->pmem_size);
       }
     }
+  }
+
+  if(offset + buffer_size > p->used_size){
+    p->used_size = offset + buffer_size;
   }
 
   return SQLITE_OK;
@@ -896,9 +894,10 @@ printf("OPEN_FLAGS:\t%i\n", flags);
     }
   }
 
-  if( pOutFlags ){
-    *pOutFlags = flags;
-  }
+  //if( pOutFlags ){
+  //  *pOutFlags = flags;
+  //}
+
   p->shm_file = 0;
   p->shm_is_pmem = 0;
   p->shm_size = 0;

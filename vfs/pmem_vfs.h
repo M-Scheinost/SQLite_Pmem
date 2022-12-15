@@ -39,7 +39,7 @@ typedef int8_t i8;
 
 /* This is 2^30 of pmem in bytes*/
 #ifndef PMEM_LEN
-# define PMEM_LEN ((off_t)(1 << 13))
+# define PMEM_LEN ((off_t)(1 << 15))
 #endif
 
 /*
