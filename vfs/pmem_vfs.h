@@ -30,8 +30,10 @@ typedef int8_t i8;
 ** Size of the write buffer used by journal files in bytes.
 */
 #ifndef PMEM_BUFFER_SIZE
-# define PMEM_BUFFER_SIZE 8192
+# define PMEM_BUFFER_SIZE 2<<14
 #endif
+
+#define SHM_BASE_SIZE ((off_t)(1 << 14))
 
 #define PMEMLOG_ACTIVATED 0
 

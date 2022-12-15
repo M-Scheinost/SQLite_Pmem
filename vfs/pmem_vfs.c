@@ -352,7 +352,7 @@ struct Persistent_File {
   PMEMlogpool *log_pool;    /* The pool for log-pmem */
   char* shm_file;     /* the wal-index file*/
   size_t shm_size;    /* size of the wal-index file*/
-  size_t shm_used;    /* used mem of wal-index */
+  size_t shm_used_size;    /* used mem of wal-index */
   int shm_is_pmem;
 };
 
@@ -391,7 +391,7 @@ struct unixShm {
  * this function just frees the buffer
 */
 static int pmem_close(sqlite3_file *pFile){
-   printf("close\n");
+  printf("close\n");
   Persistent_File *p = (Persistent_File*)pFile;
   
   if(PMEMLOG_ACTIVATED){
@@ -597,7 +597,7 @@ static int pmem_device_characteristics(sqlite3_file *pFile){
 /**
  * opens the shm file
 */
-static int unixOpenSharedMemory(Persistent_File *p){
+static int pmem_open_shm(Persistent_File *p){
 
   // TODO check for existing file
 
@@ -606,6 +606,7 @@ static int unixOpenSharedMemory(Persistent_File *p){
     return SQLITE_IOERR;
   }
   
+  // create shm-file-name
   int path_length = strlen(p->path);
   char shm_path[path_length + 4];
   memcpy(shm_path, p->path, path_length);
@@ -623,19 +624,15 @@ static int unixOpenSharedMemory(Persistent_File *p){
     return SQLITE_ERROR;
   }
   fclose(f);
-  p->used_size = 0;
   // 666 = rw-rw-rw
-  if ((p->shm_file = (char *)pmem_map_file(shm_path, PMEM_LEN, PMEM_FILE_CREATE,
+  if ((p->shm_file = (char *)pmem_map_file(shm_path, SHM_BASE_SIZE, PMEM_FILE_CREATE,
       0666, &p->shm_size, &p->shm_is_pmem)) == NULL) {
     return SQLITE_NOMEM;
   
   }
 
-  printf("open finished\n");
+  printf("shm-open finished\n");
   return SQLITE_OK;
-
-
-
 }
 
 /*
@@ -657,24 +654,40 @@ static int unixOpenSharedMemory(Persistent_File *p){
 ** address space (if it is not already), *pp is set to point to the mapped 
 ** memory and SQLITE_OK returned.
 */
-static int unixShmMap(
-  sqlite3_file *fd,               /* Handle open on database file */
-  int iRegion,                    /* Region to retrieve */
-  int szRegion,                   /* Size of regions */
-  int bExtend,                    /* True to extend file if necessary */
+static int pmem_map_shm(
+  sqlite3_file *pFile,               /* Handle open on database file */
+  int region_number,                    /* Region to retrieve */
+  int region_size,                   /* Size of regions */
+  int extend,                    /* True to extend file if necessary */
   void volatile **pp              /* OUT: Mapped memory */
 ){
+  Persistent_File *p = (Persistent_File*)pFile;
   printf("shm-map\n");
-  return 0;
+
+  /** 
+   * if file was not allocated and extending is allowed, allocate the file
+   * otherwise set pp to 0 and return ok
+  */
+  if(p->shm_file == 0){
+    if(extend){
+      pmem_open_shm(p);
+    }
+    else{
+      pp = 0;
+    return SQLITE_OK;
+    } 
+  }
+
+  if(region_size * region_number < p->shm_size){
+    pp = (volatile void**) p->shm_file + (region_number*region_size);
+  }
+
+
+  return SQLITE_OK;
 }
 
-/*
-** Change the lock state for a shared-memory segment.
-**
-** Note that the relationship between SHAREd and EXCLUSIVE locks is a little
-** different here than in posix.  In xShmLock(), one can go from unlocked
-** to shared and back or from unlocked to exclusive and back.  But one may
-** not go from shared to exclusive or from exclusive to shared.
+/**
+ * no locking in this vfs
 */
 static int unixShmLock(
   sqlite3_file *fd,          /* Database file holding the shared memory */
@@ -682,6 +695,7 @@ static int unixShmLock(
   int n,                     /* Number of locks to acquire or release */
   int flags                  /* What to do with the lock */
 ){
+  printf("shm-lock\n");
   return SQLITE_OK;
 }
 
@@ -691,15 +705,18 @@ static int unixShmLock(
 ** All loads and stores begun before the barrier must complete before
 ** any load or store begun after the barrier.
 */
-static void unixShmBarrier(
-  sqlite3_file *fd                /* Database file holding the shared memory */
+static void pmem_shm_barrier(
+  sqlite3_file *pFile                /* Database file holding the shared memory */
 ){
   printf("shm-barrier");
+  Persistent_File *p = (Persistent_File*)pFile;
 
-  // sqlite3MemoryBarrier();         /* compiler-defined memory barrier */
-  // assert( fd->pMethods->xLock==nolockLock 
-  //      || unixFileMutexNotheld((Persistent_File*)fd) 
-  // );
+  if(p->shm_is_pmem){
+    pmem_persist(p->shm_file, p->shm_size);
+  }
+  else{
+    pmem_msync(p->pmem_file, p->pmem_size);
+  }
 }
 
 /*
@@ -709,12 +726,20 @@ static void unixShmBarrier(
 ** If there is no shared memory associated with the connection then this
 ** routine is a harmless no-op.
 */
-static int unixShmUnmap(
-  sqlite3_file *fd,               /* The underlying database file */
+static int pmem_shm_unmap(
+  sqlite3_file *pFile,               /* The underlying database file */
   int deleteFlag                  /* Delete shared-memory if true */
 ){
   printf("shm-unmap\n");
-  return SQLITE_OK;
+  Persistent_File *p = (Persistent_File*)pFile;
+  
+  if(PMEMLOG_ACTIVATED){
+    pmemlog_close(p->log_pool);
+  }
+  else{
+    pmem_unmap(p->pmem_file, p->pmem_size);
+  }
+  return SQLITE_OK; 
 }
 
 /*
@@ -813,10 +838,10 @@ static int pmem_open(
     pmem_file_control,              /* xFileControl */
     pmem_sector_size,               /* xSectorSize */
     pmem_device_characteristics,     /* xDeviceCharacteristics */
-    unixShmMap,                     /* xShmMap */
+    pmem_map_shm,                     /* xShmMap */
     unixShmLock,                /* xShmLock */
-    unixShmBarrier,             /* xShmBarrier */
-    unixShmUnmap,               /* xShmUnmap */
+    pmem_shm_barrier,             /* xShmBarrier */
+    pmem_shm_unmap,               /* xShmUnmap */
     unixFetch,                  /* xFetch */
     unixUnfetch,                /* xUnfetch */
   };
@@ -874,8 +899,10 @@ printf("OPEN_FLAGS:\t%i\n", flags);
   if( pOutFlags ){
     *pOutFlags = flags;
   }
-
-  unixOpenSharedMemory(p);
+  p->shm_file = 0;
+  p->shm_is_pmem = 0;
+  p->shm_size = 0;
+  p->shm_used_size = 0;
 
   printf("open finished\n");
   return SQLITE_OK;
