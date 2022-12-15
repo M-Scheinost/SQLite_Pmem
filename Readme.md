@@ -1,5 +1,5 @@
 # TODOS
-- create shm methods in pmem_vfs.c. they handle the db-shm file which is needed in for pmem
+- fix the shm methods so the void volatile ** pointer points to the wal index
 - change the benchmark to tpc-e
 
 # How to build

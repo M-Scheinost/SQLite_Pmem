@@ -97,7 +97,7 @@ void test_demo(){
 
 int main (int argc, char** argv){
 
-  //test_normal();
+  test_normal();
   //test_demo();
   test_pmem();
 }

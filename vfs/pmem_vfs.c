@@ -350,7 +350,7 @@ struct Persistent_File {
   size_t pmem_size;      /*The size of pmem-memory that was actually mapped, the pmem_file size*/
   char* pmem_file;        /*The entire pmem fiel represented as char array*/
   PMEMlogpool *log_pool;    /* The pool for log-pmem */
-  char* shm_file;     /* the wal-index file*/
+  char** shm_file;     /* the wal-index file*/
   size_t shm_size;    /* size of the wal-index file*/
   size_t shm_used_size;    /* used mem of wal-index */
   int shm_is_pmem;
@@ -465,7 +465,7 @@ static int pmem_write (
     p->used_size = offset + buffer_size;
   }
 
-  
+
 
   return SQLITE_OK;
   
@@ -625,7 +625,7 @@ static int pmem_open_shm(Persistent_File *p){
   }
   fclose(f);
   // 666 = rw-rw-rw
-  if ((p->shm_file = (char *)pmem_map_file(shm_path, SHM_BASE_SIZE, PMEM_FILE_CREATE,
+  if ((p->shm_file = (char **)pmem_map_file(shm_path, SHM_BASE_SIZE, PMEM_FILE_CREATE,
       0666, &p->shm_size, &p->shm_is_pmem)) == NULL) {
     return SQLITE_NOMEM;
   
@@ -679,9 +679,12 @@ static int pmem_map_shm(
   }
 
   if(region_size * region_number < p->shm_size){
-    pp = (volatile void**) p->shm_file + (region_number*region_size);
+    pp = (volatile void**)p->shm_file + (region_number*region_size);
   }
 
+  // if(offset + buffer_size > p->used_size){
+  //   p->used_size = offset + buffer_size;
+  // }
 
   return SQLITE_OK;
 }
