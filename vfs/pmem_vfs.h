@@ -33,7 +33,8 @@ typedef int8_t i8;
 # define PMEM_BUFFER_SIZE 2<<14
 #endif
 
-#define SHM_BASE_SIZE ((off_t)(1 << 14))
+/* shm must be at least 32kB large*/
+#define SHM_BASE_SIZE ((off_t)(1 << 15))
 
 #define PMEMLOG_ACTIVATED 0
 
