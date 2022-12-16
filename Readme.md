@@ -1,6 +1,7 @@
 # TODOS
 - change the benchmark to tpc-e
 - dynamic file_sizes similar to vector or other strategy
+    - extending is now possible both for shm and normal, but its not tested
 
 # How to build
 I made a cmake file so do the magic:
