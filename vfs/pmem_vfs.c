@@ -448,6 +448,7 @@ static int pmem_write (
     }
   }
   else{
+    try_write:
     if(offset + buffer_size <= p->pmem_size){
       if(p->is_pmem){
         /* automatically flushes data to pmem no extra call needed*/
@@ -458,6 +459,13 @@ static int pmem_write (
         memcpy(&p->pmem_file[offset], buffer, buffer_size);
         pmem_msync(p->pmem_file, p->pmem_size);
       }
+    }
+    else{
+      if ((p->pmem_file = (char *)pmem_map_file(p->path, p->pmem_size*2, PMEM_FILE_CREATE,
+          0666, &p->pmem_size, &p->is_pmem)) == NULL) {
+        return SQLITE_NOMEM;
+      }
+      goto try_write;
     }
   }
 
@@ -635,6 +643,26 @@ static int pmem_open_shm(Persistent_File *p){
   return SQLITE_OK;
 }
 
+static int pmem_extend_shm(Persistent_File *p){
+
+   int path_length = strlen(p->path);
+  char shm_path[path_length + 4];
+  memcpy(shm_path, p->path, path_length);
+  shm_path[path_length + 4] = '\0';
+  shm_path[path_length + 3] = 'm';
+  shm_path[path_length + 2] = 'h';
+  shm_path[path_length + 1] = 's';
+  shm_path[path_length] = '-';
+
+
+  if ((p->shm_file = (char **)pmem_map_file(shm_path, p->shm_size, PMEM_FILE_CREATE,
+      0666, &p->shm_size, &p->shm_is_pmem)) == NULL) {
+    return SQLITE_NOMEM;
+  
+  }
+  return SQLITE_OK;
+}
+
 /*
 ** This function is called to obtain a pointer to region iRegion of the 
 ** shared-memory associated with the database file fd. Shared-memory regions 
@@ -678,8 +706,13 @@ static int pmem_map_shm(
     } 
   }
 
+try_map_shm:
   if(region_size * region_number < p->shm_size){
     *pp = (volatile void**)p->shm_file + (region_number*region_size);
+  }
+  else{
+    pmem_extend_shm(p);
+    goto try_map_shm;
   }
 
   // if(offset + buffer_size > p->used_size){

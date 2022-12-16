@@ -1,6 +1,6 @@
 # TODOS
-- fix the shm methods so the void volatile ** pointer points to the wal index
 - change the benchmark to tpc-e
+- dynamic file_sizes similar to vector or other strategy
 
 # How to build
 I made a cmake file so do the magic:

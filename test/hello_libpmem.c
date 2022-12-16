@@ -78,6 +78,39 @@ void write_hello_string (void *buf, char *path)
 	return;	
 }
 
+void write_to_pmem(void *buffer, size_t buffer_size,size_t offset, char* path){
+
+  char *pmemaddr;
+  size_t mapped_len;
+  int is_pmem;
+  if(buffer_size < PMEM_LEN){
+    if ((pmemaddr = (char *)pmem_map_file(path, PMEM_LEN, PMEM_FILE_CREATE,
+				0666, &mapped_len, &is_pmem)) == NULL) {
+		perror("pmem_map_file");
+		exit(1);
+	  }
+    printf("pmemaddress:\t%i\n", pmemaddr);
+    memset(pmemaddr, 0, PMEM_LEN);
+  }
+  else{
+    printf("pmemaddress:\t%i\tpmem_size:\t%i\n", pmemaddr, mapped_len);
+    if ((pmemaddr = (char *)pmem_map_file(path, PMEM_LEN*2, PMEM_FILE_CREATE,
+				0666, &mapped_len, &is_pmem)) == NULL) {
+		perror("pmem_map_file");
+		exit(1);
+	  }
+    printf("pmemaddress:\t%i\tpmem_size:\t%i\n", pmemaddr, mapped_len);
+  }
+  
+
+  pmem_memcpy(pmemaddr + offset, buffer, buffer_size, PMEM_F_MEM_NONTEMPORAL);
+  
+  if (is_pmem)
+		pmem_persist(pmemaddr, mapped_len);
+	else
+		pmem_msync(pmemaddr, mapped_len);
+}
+
 /****************************
  * This function reads the "Hello..." string from persistent-memory.
  *****************************/
@@ -116,6 +149,16 @@ int main(int argc, char *argv[])
 	// Create the string to save to persistent memory
 	char buf[MAX_BUF_LEN] = "Hello Persistent Memory!!!";
 	
+  if (strcmp (argv[1], "-w") == 0) {
+    write_to_pmem(buf, sizeof(buf),0, path);
+    write_to_pmem(buf, PMEM_LEN + 5,32, path);
+  }
+  else { 
+		fprintf(stderr, "Usage: %s <-w/-r> <filename>\n", argv[0]);
+		exit(1);
+	}
+
+  /*
 	if (strcmp (argv[1], "-w") == 0) {
 		write_hello_string (buf, path);
 	}
@@ -126,6 +169,7 @@ int main(int argc, char *argv[])
 		fprintf(stderr, "Usage: %s <-w/-r> <filename>\n", argv[0]);
 		exit(1);
 	}
+  */
 
 	return 0;
 }
