@@ -47,6 +47,7 @@ void test_pmem(){
   int status = sqlite3_open("pmem.db", &sqlite);
   printf("STATUS:\t%i\n", status);
   /* Default cache size is a combined 4 MB */
+  
     
   char* WAL_stmt = "PRAGMA journal_mode = WAL";
   status = sqlite3_exec(sqlite, WAL_stmt, NULL, NULL, &err_msg);
