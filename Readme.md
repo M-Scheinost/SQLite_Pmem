@@ -1,5 +1,6 @@
 # TODOS
 - change the benchmark to tpc-e
+    - added tpc-e folders 
 - dynamic file_sizes similar to vector or other strategy
     - extending is now possible both for shm and normal, but its not tested
 
