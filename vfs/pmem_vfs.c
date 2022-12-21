@@ -501,7 +501,11 @@ static int pmem_sync(sqlite3_file *pFile, int flags){
     return SQLITE_OK;
   }
 
-  /* sync file contents, don't know if this is actually needed since write always syncs but better be safe than sorry*/
+  /**
+   * sync file contents,
+   * this is not needed, because writing always sync 
+   * activiating it doesn't greatly affect perfomance
+   */
   // if(p->is_pmem){
   //   pmem_persist(p->pmem_file, p->pmem_size);
   // }
@@ -556,7 +560,7 @@ static int pmem_file_control(sqlite3_file *pFile, int op, void *pArg){
 */
 static int pmem_sector_size(sqlite3_file *pFile){
   /* 4096 is standard unix sector size*/
-  return 512;
+  return 256;
 }
 static int pmem_device_characteristics(sqlite3_file *pFile){
   // // printf("device characteristics\n");

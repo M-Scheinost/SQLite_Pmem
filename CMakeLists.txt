@@ -23,6 +23,7 @@ set(INSTALL_BIN_DIR "${CMAKE_INSTALL_PREFIX}/bin" CACHE PATH "Installation direc
 set(INSTALL_LIB_DIR "${CMAKE_INSTALL_PREFIX}/lib" CACHE PATH "Installation directory for libraries")
 set(INSTALL_INC_DIR "${CMAKE_INSTALL_PREFIX}/include" CACHE PATH "Installation directory for headers")
 set(CMAKE_C_STANDARD 11)
+# SET (CMAKE_C_COMPILER  "/usr/bin/gcc")
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_FLAGS_RELEASE "-DNDEBUG -O3")
 set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -O0 -D_GLIBC_DEBUG")

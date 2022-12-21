@@ -3,7 +3,7 @@
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
 #include "bench.h"
-
+#include "../vfs/pmem_vfs.h"
 // Comma-separated list of operations to run in the specified order
 //   Actual benchmarks:
 //
@@ -195,6 +195,7 @@ int main(int argc, char** argv) {
   if (FLAGS_db == NULL)
       FLAGS_db = default_db_path;
 
+  sqlite3_vfs_register(sqlite3_pmem_vfs(), 1);
   benchmark_init();
   benchmark_run();
   benchmark_fini();
