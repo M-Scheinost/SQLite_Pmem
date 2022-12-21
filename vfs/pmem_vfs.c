@@ -452,12 +452,13 @@ static int pmem_write (
     if(offset + buffer_size <= p->pmem_size){
       if(p->is_pmem){
         /* automatically flushes data to pmem no extra call needed*/
-        pmem_memcpy(p->pmem_file + offset, buffer, buffer_size, PMEM_F_MEM_NONTEMPORAL);
+        //pmem_memcpy(p->pmem_file + offset, buffer, buffer_size, PMEM_F_MEM_NONTEMPORAL);
+        memcpy(&p->pmem_file + offset, buffer, buffer_size);
       }
       else{
         /* doesn't sync changes and therefor must be synced */
         memcpy(&p->pmem_file[offset], buffer, buffer_size);
-        pmem_msync(p->pmem_file, p->pmem_size);
+        //pmem_msync(p->pmem_file, p->pmem_size);
       }
     }
     else{
@@ -506,12 +507,12 @@ static int pmem_sync(sqlite3_file *pFile, int flags){
    * this is not needed, because writing always sync 
    * activiating it doesn't greatly affect perfomance
    */
-  // if(p->is_pmem){
-  //   pmem_persist(p->pmem_file, p->pmem_size);
-  // }
-  // else{
-  //   pmem_msync(p->pmem_file, p->pmem_size);
-  // }
+  if(p->is_pmem){
+    pmem_persist(p->pmem_file, p->pmem_size);
+  }
+  else{
+    pmem_msync(p->pmem_file, p->pmem_size);
+  }
   return SQLITE_OK;
 }
 
