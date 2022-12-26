@@ -328,6 +328,12 @@ static struct unix_syscall {
 }; /* End of the overrideable system calls */
 
 
+/* Forward references */
+typedef struct unixShm unixShm;               /* Connection shared memory */
+typedef struct unixShmNode unixShmNode;       /* Shared memory instance */
+typedef struct unixInodeInfo unixInodeInfo;   /* An i-node */
+
+
 /*
 ** When using this VFS, the sqlite3_file* handles that SQLite uses are
 ** actually pointers to instances of type Persistent_File.
@@ -344,10 +350,40 @@ struct Persistent_File {
   size_t pmem_size;      /*The size of pmem-memory that was actually mapped, the pmem_file size*/
   char* pmem_file;        /*The entire pmem fiel represented as char array*/
   PMEMlogpool *log_pool;    /* The pool for log-pmem */
+  char** shm_file;     /* the wal-index file*/
+  size_t shm_size;    /* size of the wal-index file*/
+  size_t shm_used_size;    /* used mem of wal-index */
+  int shm_is_pmem;
 };
 
 
+/*
+** Structure used internally by this VFS to record the state of an
+** open shared memory connection.
+**
+** The following fields are initialized when this object is created and
+** are read-only thereafter:
+**
+**    unixShm.pShmNode
+**    unixShm.id
+**
+** All other fields are read/write.  The unixShm.pShmNode->pShmMutex must
+** be held while accessing any read/write fields.
+*/
+struct unixShm {
+  unixShmNode *pShmNode;     /* The underlying unixShmNode object */
+  unixShm *pNext;            /* Next unixShm with the same unixShmNode */
+  u8 hasMutex;               /* True if holding the unixShmNode->pShmMutex */
+  u8 id;                     /* Id of this connection within its unixShmNode */
+  u16 sharedMask;            /* Mask of shared locks held */
+  u16 exclMask;              /* Mask of exclusive locks held */
+};
 
+/*
+** Constants used for locking
+*/
+#define UNIX_SHM_BASE   ((22+SQLITE_SHM_NLOCK)*4)         /* first lock byte */
+#define UNIX_SHM_DMS    (UNIX_SHM_BASE+SQLITE_SHM_NLOCK)  /* deadman switch */
 
 /*
  * writes the buffer to pmem
@@ -355,10 +391,10 @@ struct Persistent_File {
  * this function just frees the buffer
 */
 static int pmem_close(sqlite3_file *pFile){
-   printf("close\n");
+  // // printf("close\n");
   Persistent_File *p = (Persistent_File*)pFile;
   
-  if(p->is_wal){
+  if(PMEMLOG_ACTIVATED){
     pmemlog_close(p->log_pool);
   }
   else{
@@ -376,21 +412,15 @@ static int pmem_read(
   int buffer_size, /* the size of the buffer */
   sqlite_int64 offset /*the offset to read */
 ){
-  printf("read\n");
+  // // printf("read\n");
   Persistent_File *p = (Persistent_File*)pFile;
-  off_t ofst;                     /* Return value from lseek() */
-  int nRead;                      /* Return value from read() */
 
   if(offset + buffer_size < p->pmem_size){
-    memcpy(buffer, &((u_int8_t *) (p->pmem_file))[offset], buffer_size);
+    memcpy(buffer,p->pmem_file+ offset, buffer_size);
   }
   else{
     return SQLITE_IOERR_SHORT_READ;
   }
-    
-
-
-
   return SQLITE_OK;
 }
 
@@ -401,75 +431,52 @@ static int pmem_read(
 */
 static int pmem_write (
   sqlite3_file *pFile,
-  const void *zBuf,  
-  int amt, 
+  const void *buffer,  
+  int buffer_size, 
   sqlite_int64 offset
 ){
-  printf("write\n");
+  // // printf("write\n");
   Persistent_File *p = (Persistent_File*)pFile;
   
   assert ( pFile );
-  assert( amt > 0);
+  assert( buffer_size > 0);
 
-  if(p->is_pmem && p->is_wal){
-    if (pmemlog_append (p->log_pool, zBuf, amt) < 0) {
-        printf("pmemlog_append: error occured\n");
+  if(PMEMLOG_ACTIVATED){
+    if (pmemlog_append (p->log_pool, buffer, buffer_size) < 0) {
+        // // printf("pmemlog_append: error occured\n");
         return -1;
     }
   }
   else{
-    if(offset + amt <= p->pmem_size){
+    try_write:
+    if(offset + buffer_size <= p->pmem_size){
       if(p->is_pmem){
         /* automatically flushes data to pmem no extra call needed*/
-        pmem_memcpy(p->pmem_file + offset, zBuf, amt, PMEM_F_MEM_NONTEMPORAL);
+        //pmem_memcpy(p->pmem_file + offset, buffer, buffer_size, PMEM_F_MEM_NONTEMPORAL);
+        memcpy(&p->pmem_file + offset, buffer, buffer_size);
       }
       else{
         /* doesn't sync changes and therefor must be synced */
-        memcpy(&p->pmem_file[offset], zBuf, amt);
-        pmem_msync(p->pmem_file, p->pmem_size);
+        memcpy(&p->pmem_file[offset], buffer, buffer_size);
+        //pmem_msync(p->pmem_file, p->pmem_size);
       }
+    }
+    else{
+      if ((p->pmem_file = (char *)pmem_map_file(p->path, p->pmem_size*2, PMEM_FILE_CREATE,
+          0666, &p->pmem_size, &p->is_pmem)) == NULL) {
+        return SQLITE_NOMEM;
+      }
+      goto try_write;
     }
   }
 
-  return SQLITE_OK;
-  
-//  if( p->buffer ){
-//    char *z = (char *)zBuf;       /* Pointer to remaining data to write */
-//    int n = amt;                 /* Number of bytes at z */
-//    sqlite3_int64 i = offset;      /* File offset to write to */
-//
-//    while( n>0 ){
-//      int nCopy;                  /* Number of bytes to copy into buffer */
-//
-//      /* If the buffer is full, or if this data is not being written directly
-//      ** following the data already buffered, flush the buffer. Flushing
-//      ** the buffer is a no-op if it is empty.  
-//      */
-//      if( p->buffer_size==SQLITE_DEMOVFS_BUFFERSZ || p->iBufferOfst+p->buffer_size!=i ){
-//        int rc = pmem_flush_buffer(p);
-//        if( rc!=SQLITE_OK ){
-//          return rc;
-//        }
-//      }
-//      assert( p->buffer_size==0 || p->iBufferOfst+p->buffer_size==i );
-//      p->iBufferOfst = i - p->buffer_size;
-//
-//      /* Copy as much data as possible into the buffer. */
-//      nCopy = SQLITE_DEMOVFS_BUFFERSZ - p->buffer_size;
-//      if( nCopy>n ){
-//        nCopy = n;
-//      }
-//      memcpy(&p->buffer[p->buffer_size], z, nCopy);
-//      p->buffer_size += nCopy;
-//
-//      n -= nCopy;
-//      i += nCopy;
-//      z += nCopy;
-//    }
-//  }else{
-//    return pmem_direct_write(p, zBuf, iAmt, iOfst);
-//  }
-  
+  if(offset + buffer_size > p->used_size){
+    p->used_size = offset + buffer_size;
+  }
+
+
+
+  return SQLITE_OK; 
 }
 
 /*
@@ -477,7 +484,7 @@ static int pmem_write (
 ** the top of the file).
 */
 static int pmem_truncate(sqlite3_file *pFile, sqlite_int64 size){
-  printf("truncate\n");
+  // // printf("truncate\n");
 #if 0
   if( ftruncate(((DemoFile *)pFile)->fd, size) ) return SQLITE_IOERR_TRUNCATE;
 #endif
@@ -488,14 +495,18 @@ static int pmem_truncate(sqlite3_file *pFile, sqlite_int64 size){
 ** Sync the contents of the file to the persistent media.
 */
 static int pmem_sync(sqlite3_file *pFile, int flags){
-  printf("pmem sync\n");
+  // // printf("pmem sync\n");
   Persistent_File *p = (Persistent_File*)pFile;
   /* wal file is always written back after a write, no need to sync*/
-  if(p->is_wal){
+  if(PMEMLOG_ACTIVATED){
     return SQLITE_OK;
   }
 
-  /* sync file contents, don't know if this is actually needed since write always syncs but better be safe than sorry*/
+  /**
+   * sync file contents,
+   * this is not needed, because writing always sync 
+   * activiating it doesn't greatly affect perfomance
+   */
   if(p->is_pmem){
     pmem_persist(p->pmem_file, p->pmem_size);
   }
@@ -509,7 +520,7 @@ static int pmem_sync(sqlite3_file *pFile, int flags){
 ** Write the size of the file in bytes to *pSize.
 */
 static int pmem_file_size(sqlite3_file *pFile, sqlite_int64 *pSize){
-  printf("file size\n");
+  // // printf("file size\n");
   Persistent_File *p = (Persistent_File*)pFile;
   *pSize = p->used_size;
   return SQLITE_OK;
@@ -522,15 +533,15 @@ static int pmem_file_size(sqlite3_file *pFile, sqlite_int64 *pSize){
 ** file is found in the file-system it is rolled back.
 */
 static int pmem_lock(sqlite3_file *pFile, int eLock){
-  printf("lock\n");
+  // // printf("lock\n");
   return SQLITE_OK;
 }
 static int pmem_unlock(sqlite3_file *pFile, int eLock){
-  printf("unlock\n");
+  // // printf("unlock\n");
   return SQLITE_OK;
 }
 static int pmem_check_reserved_lock(sqlite3_file *pFile, int *pResOut){
-  printf("reserved lock\n");
+  // // printf("reserved lock\n");
   *pResOut = 0;
   return SQLITE_OK;
 }
@@ -539,7 +550,7 @@ static int pmem_check_reserved_lock(sqlite3_file *pFile, int *pResOut){
 ** No xFileControl() verbs are implemented by this VFS.
 */
 static int pmem_file_control(sqlite3_file *pFile, int op, void *pArg){
-  printf("file control\n");
+  // // printf("file control\n");
   return SQLITE_NOTFOUND;
 }
 
@@ -550,11 +561,73 @@ static int pmem_file_control(sqlite3_file *pFile, int op, void *pArg){
 */
 static int pmem_sector_size(sqlite3_file *pFile){
   /* 4096 is standard unix sector size*/
-  return 512;
+  return 256;
 }
 static int pmem_device_characteristics(sqlite3_file *pFile){
-  printf("device characteristics\n");
+  // // printf("device characteristics\n");
   return 0;
+}
+
+
+/**
+ * opens the shm file
+*/
+static int pmem_open_shm(Persistent_File *p){
+
+  // TODO check for existing file
+
+  /* no tmp files allowd */
+  if(p->path == 0 ){
+    return SQLITE_IOERR;
+  }
+  
+  // create shm-file-name
+  int path_length = strlen(p->path);
+  char shm_path[path_length + 4];
+  memcpy(shm_path, p->path, path_length);
+  shm_path[path_length + 4] = '\0';
+  shm_path[path_length + 3] = 'm';
+  shm_path[path_length + 2] = 'h';
+  shm_path[path_length + 1] = 's';
+  shm_path[path_length] = '-';
+
+  // // printf("shm-path:\t%s\n", shm_path);
+  
+  /* ignoring existing files here */
+  FILE *f = fopen(shm_path, "w");
+  if(f == NULL){
+    return SQLITE_ERROR;
+  }
+  fclose(f);
+  // 666 = rw-rw-rw
+  if ((p->shm_file = (char **)pmem_map_file(shm_path, SHM_BASE_SIZE, PMEM_FILE_CREATE,
+      0666, &p->shm_size, &p->shm_is_pmem)) == NULL) {
+    return SQLITE_NOMEM;
+  
+  }
+
+  // // printf("shm-open finished\n");
+  return SQLITE_OK;
+}
+
+static int pmem_extend_shm(Persistent_File *p){
+
+   int path_length = strlen(p->path);
+  char shm_path[path_length + 4];
+  memcpy(shm_path, p->path, path_length);
+  shm_path[path_length + 4] = '\0';
+  shm_path[path_length + 3] = 'm';
+  shm_path[path_length + 2] = 'h';
+  shm_path[path_length + 1] = 's';
+  shm_path[path_length] = '-';
+
+
+  if ((p->shm_file = (char **)pmem_map_file(shm_path, p->shm_size, PMEM_FILE_CREATE,
+      0666, &p->shm_size, &p->shm_is_pmem)) == NULL) {
+    return SQLITE_NOMEM;
+  
+  }
+  return SQLITE_OK;
 }
 
 /*
@@ -576,23 +649,48 @@ static int pmem_device_characteristics(sqlite3_file *pFile){
 ** address space (if it is not already), *pp is set to point to the mapped 
 ** memory and SQLITE_OK returned.
 */
-static int unixShmMap(
-  sqlite3_file *fd,               /* Handle open on database file */
-  int iRegion,                    /* Region to retrieve */
-  int szRegion,                   /* Size of regions */
-  int bExtend,                    /* True to extend file if necessary */
+static int pmem_map_shm(
+  sqlite3_file *pFile,               /* Handle open on database file */
+  int region_number,                    /* Region to retrieve */
+  int region_size,                   /* Size of regions */
+  int extend,                    /* True to extend file if necessary */
   void volatile **pp              /* OUT: Mapped memory */
 ){
+  Persistent_File *p = (Persistent_File*)pFile;
+  // // printf("shm-map\n");
+
+  /** 
+   * if file was not allocated and extending is allowed, allocate the file
+   * otherwise set pp to 0 and return ok
+  */
+  if(p->shm_file == 0){
+    if(extend){
+      pmem_open_shm(p);
+    }
+    else{
+      *pp = 0;
+    return SQLITE_OK;
+    } 
+  }
+
+try_map_shm:
+  if(region_size * region_number < p->shm_size){
+    *pp = (volatile void**)p->shm_file + (region_number*region_size);
+  }
+  else{
+    pmem_extend_shm(p);
+    goto try_map_shm;
+  }
+
+  // if(offset + buffer_size > p->used_size){
+  //   p->used_size = offset + buffer_size;
+  // }
+
   return SQLITE_OK;
 }
 
-/*
-** Change the lock state for a shared-memory segment.
-**
-** Note that the relationship between SHAREd and EXCLUSIVE locks is a little
-** different here than in posix.  In xShmLock(), one can go from unlocked
-** to shared and back or from unlocked to exclusive and back.  But one may
-** not go from shared to exclusive or from exclusive to shared.
+/**
+ * no locking in this vfs
 */
 static int unixShmLock(
   sqlite3_file *fd,          /* Database file holding the shared memory */
@@ -600,6 +698,7 @@ static int unixShmLock(
   int n,                     /* Number of locks to acquire or release */
   int flags                  /* What to do with the lock */
 ){
+  // // printf("shm-lock\n");
   return SQLITE_OK;
 }
 
@@ -609,10 +708,18 @@ static int unixShmLock(
 ** All loads and stores begun before the barrier must complete before
 ** any load or store begun after the barrier.
 */
-static void unixShmBarrier(
-  sqlite3_file *fd                /* Database file holding the shared memory */
+static void pmem_shm_barrier(
+  sqlite3_file *pFile                /* Database file holding the shared memory */
 ){
-  /* not needed*/
+  // printf("shm-barrier");
+  Persistent_File *p = (Persistent_File*)pFile;
+
+  if(p->shm_is_pmem){
+    pmem_persist(p->shm_file, p->shm_size);
+  }
+  else{
+    pmem_msync(p->pmem_file, p->pmem_size);
+  }
 }
 
 /*
@@ -622,11 +729,20 @@ static void unixShmBarrier(
 ** If there is no shared memory associated with the connection then this
 ** routine is a harmless no-op.
 */
-static int unixShmUnmap(
-  sqlite3_file *fd,               /* The underlying database file */
+static int pmem_shm_unmap(
+  sqlite3_file *pFile,               /* The underlying database file */
   int deleteFlag                  /* Delete shared-memory if true */
 ){
-  return SQLITE_OK;
+  // printf("shm-unmap\n");
+  Persistent_File *p = (Persistent_File*)pFile;
+  
+  if(PMEMLOG_ACTIVATED){
+    pmemlog_close(p->log_pool);
+  }
+  else{
+    pmem_unmap(p->pmem_file, p->pmem_size);
+  }
+  return SQLITE_OK; 
 }
 
 /*
@@ -710,7 +826,7 @@ static int pmem_open(
   int flags,                      /* Input SQLITE_OPEN_XXX flags */
   int *pOutFlags                  /* Output SQLITE_OPEN_XXX flags (or NULL) */
 ){
-  printf("open database: %s\n", file_path);
+  // printf("open database: %s\n", file_path);
   static const sqlite3_io_methods pmem_io = {
     3,                            /* iVersion */
     pmem_close,                    /* xClose */
@@ -725,10 +841,10 @@ static int pmem_open(
     pmem_file_control,              /* xFileControl */
     pmem_sector_size,               /* xSectorSize */
     pmem_device_characteristics,     /* xDeviceCharacteristics */
-    unixShmMap,                     /* xShmMap */
+    pmem_map_shm,                     /* xShmMap */
     unixShmLock,                /* xShmLock */
-    unixShmBarrier,             /* xShmBarrier */
-    unixShmUnmap,               /* xShmUnmap */
+    pmem_shm_barrier,             /* xShmBarrier */
+    pmem_shm_unmap,               /* xShmUnmap */
     unixFetch,                  /* xFetch */
     unixUnfetch,                /* xUnfetch */
   };
@@ -748,9 +864,15 @@ static int pmem_open(
   //p->pVfs = pVfs;
   //p->pMethod = &pmem_io;
 
-printf("OPEN_FLAGS:\t%i\n", flags);
+// printf("OPEN_FLAGS:\t%i\n", flags);
 
-  if(WAL_MODE){
+  p->is_wal = flags & SQLITE_OPEN_WAL;
+  
+  //if(p->is_wal){
+  //  p->path = "/mnt/pmem0/scheinost/database.db-wal";
+  //}
+
+  if(PMEMLOG_ACTIVATED){
     p->is_wal = 1;
     
     p->log_pool = pmemlog_create(file_path, PMEM_LEN, 0666);
@@ -758,12 +880,11 @@ printf("OPEN_FLAGS:\t%i\n", flags);
       p->log_pool = pmemlog_open(file_path);
     
     if(p->log_pool == NULL){
-      printf("Error wile opening pmemlog\n");
+      // printf("Error wile opening pmemlog\n");
       return SQLITE_ERROR;
     }
   }
   else{
-
     /* ignoring existing files here */
     FILE *f = fopen(p->path, "w");
     if(f == NULL){
@@ -778,11 +899,16 @@ printf("OPEN_FLAGS:\t%i\n", flags);
     }
   }
 
-  if( pOutFlags ){
-    *pOutFlags = flags;
-  }
+  //if( pOutFlags ){
+  //  *pOutFlags = flags;
+  //}
 
-  printf("open finished\n");
+  p->shm_file = 0;
+  p->shm_is_pmem = 0;
+  p->shm_size = 0;
+  p->shm_used_size = 0;
+
+  // // printf("open finished\n");
   return SQLITE_OK;
 }
 
