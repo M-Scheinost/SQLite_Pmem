@@ -1184,7 +1184,7 @@ sqlite3_vfs *sqlite3_pmem_vfs(void){
     sizeof(Persistent_File),             /* szOsFile */
     MAXPATHNAME,                  /* mxPathname */
     0,                            /* pNext */
-    "Pmem_VFS",                       /* zName */
+    "PMem_VFS",                       /* zName */
     0,                            /* pAppData */
     pmem_open,                     /* xOpen */
     demoDelete,                   /* xDelete */
