@@ -22,7 +22,7 @@
 **
 ** OVERVIEW
 **
-**   The code in this file implements a SQLite VFS for perstistent memory 
+**   The code in this file implements a SQLite VFS for persistent memory 
 **   that can only be used on Linux operating systems. The following 
 **   system calls are used:
 **
@@ -328,12 +328,6 @@ static struct unix_syscall {
 }; /* End of the overrideable system calls */
 
 
-/* Forward references */
-typedef struct unixShm unixShm;               /* Connection shared memory */
-typedef struct unixShmNode unixShmNode;       /* Shared memory instance */
-typedef struct unixInodeInfo unixInodeInfo;   /* An i-node */
-
-
 /*
 ** When using this VFS, the sqlite3_file* handles that SQLite uses are
 ** actually pointers to instances of type Persistent_File.
@@ -356,28 +350,6 @@ struct Persistent_File {
   int shm_is_pmem;
 };
 
-
-/*
-** Structure used internally by this VFS to record the state of an
-** open shared memory connection.
-**
-** The following fields are initialized when this object is created and
-** are read-only thereafter:
-**
-**    unixShm.pShmNode
-**    unixShm.id
-**
-** All other fields are read/write.  The unixShm.pShmNode->pShmMutex must
-** be held while accessing any read/write fields.
-*/
-struct unixShm {
-  unixShmNode *pShmNode;     /* The underlying unixShmNode object */
-  unixShm *pNext;            /* Next unixShm with the same unixShmNode */
-  u8 hasMutex;               /* True if holding the unixShmNode->pShmMutex */
-  u8 id;                     /* Id of this connection within its unixShmNode */
-  u16 sharedMask;            /* Mask of shared locks held */
-  u16 exclMask;              /* Mask of exclusive locks held */
-};
 
 /*
 ** Constants used for locking
