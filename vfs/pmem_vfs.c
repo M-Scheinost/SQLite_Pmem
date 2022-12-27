@@ -474,11 +474,6 @@ static int pmem_sync(sqlite3_file *pFile, int flags){
     return SQLITE_OK;
   }
 
-  /**
-   * sync file contents,
-   * this is not needed, because writing always sync 
-   * activiating it doesn't greatly affect perfomance
-   */
   if(p->is_pmem){
     pmem_persist(p->pmem_file, p->pmem_size);
   }
