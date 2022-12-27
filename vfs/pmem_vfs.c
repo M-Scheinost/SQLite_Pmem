@@ -434,7 +434,7 @@ static int pmem_write (
       }
     }
     else{
-      if ((p->pmem_file = (char *)pmem_map_file(p->path, p->pmem_size*2, PMEM_FILE_CREATE,
+      if ((p->pmem_file = (char *)pmem_map_file(p->path, p->pmem_size*GROW_FACTOR_FILE, PMEM_FILE_CREATE,
           0666, &p->pmem_size, &p->is_pmem)) == NULL) {
         return SQLITE_NOMEM;
       }
@@ -584,7 +584,7 @@ static int pmem_open_shm(Persistent_File *p){
 
 static int pmem_extend_shm(Persistent_File *p){
 
-   int path_length = strlen(p->path);
+  int path_length = strlen(p->path);
   char shm_path[path_length + 4];
   memcpy(shm_path, p->path, path_length);
   shm_path[path_length + 4] = '\0';
