@@ -17,6 +17,7 @@
         "unordered_set": "c",
         "tuple": "c",
         "cstdio": "c",
-        "*.ipp": "c"
+        "*.ipp": "c",
+        "sqlite3.h": "c"
     }
 }
