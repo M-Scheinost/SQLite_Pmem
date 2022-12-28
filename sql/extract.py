@@ -21,7 +21,7 @@ for file in glob.glob("../TPC-E/flat_out/*.txt"):
     table_name=file_name.strip('.')
     try:
         with open(file) as data:
-            rows=data.readlines(10000000)
+            rows=data.readlines(10000000000)
             csv_rows=[]
             for row in rows:
                 csv_row=row.replace('|',',')
