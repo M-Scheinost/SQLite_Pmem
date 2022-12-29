@@ -27,7 +27,7 @@ The cmake supports Debug and Release mode, so set the -CMAKE_BUILD_TYPE accordin
 # How to TPC-E
 
 ## EGenLoader
-`./EGenLoader -i ../flat_in -o ../flat_out -c 2000 -t 2000 -f 20 -w 50`
+`./EGenLoader -i ../flat_in -o ../flat_out -c 2000 -t 2000 -f 1000 -w 50`
 ```
 EGen v1.14.0
 Usage:
