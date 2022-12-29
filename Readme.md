@@ -27,6 +27,7 @@ The cmake supports Debug and Release mode, so set the -CMAKE_BUILD_TYPE accordin
 # How to TPC-E
 
 ## EGenLoader
+`./EGenLoader -i ../flat_in -o ../flat_out -c 2000 -t 2000 -f 20 -w 50`
 ```
 EGen v1.14.0
 Usage:
@@ -37,7 +38,7 @@ EGenLoader [options]
    -b number                   1           Beginning customer ordinal position
    -c number                   5000        Number of customers (for this instance)
    -t number                   5000        Number of customers (total in the database)
-   -f number                   500         Scale factor (customers per 1 tpsE)
+   -f number                   500         Scale factor (customers per 1 tpsE) (a larger number generates less data)
    -w number                   300          Number of Workdays (8-hour days) of 
                                            initial trades to populate
    -i dir                      flat_in/    Directory for input files
