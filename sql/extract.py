@@ -7,6 +7,7 @@ Authors:
 2. Karanjit Singh
 3. Suhas Vijayakumar
 Yes they are the original authors but their code is so shitty i changed nearly all relevant things in this
+Seriously did the authors even run this code once???? They should have recognized how bad it is
 """
 
 
@@ -25,7 +26,8 @@ class myThread (threading.Thread):
 
 def parse_file(path):
     file_name=path[18:]
-    file_name = file_name.strip('.txt')
+    size = len(file_name)
+    file_name = file_name[:size-4]
     table_name=file_name.strip('.')
     try:
         with open(path) as data:
