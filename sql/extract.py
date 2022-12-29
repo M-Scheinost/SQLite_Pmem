@@ -35,7 +35,9 @@ def parse_file(path):
             csv_rows=[]
             for row in rows:
                 csv_row=row.replace('|','","')
-                csv_row = '"' + csv_row + '"'
+                csv_row = '"' + csv_row
+                csv_row = csv_row[:-1]
+                csv_row += '"\n'
                 csv_rows.append(csv_row)
             with open('../benchmark/csv_data/'+table_name+'.csv','w') as output:
                 output.writelines(csv_rows)
