@@ -28,5 +28,5 @@
 .import '../benchmark/csv_data/Security.csv' security
 .import '../benchmark/csv_data/Address.csv' address
 .import '../benchmark/csv_data/StatusType.csv' status_type
-.import '../benchmark/csv_data/Taxrate.csv' taxrate
+.import '../benchmark/csv_data/TaxRate.csv' taxrate
 .import '../benchmark/csv_data/ZipCode.csv' zip_code
