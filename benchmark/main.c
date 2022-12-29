@@ -2,13 +2,20 @@
 #include "../vfs/pmem_vfs.h"
 #include "stdio.h"
 
-
+static int callback(void *NotUsed, int argc, char **argv, char **azColName){
+  int i;
+  for(i=0; i<argc; i++){
+    printf("%s | ", argv[i] ? argv[i] : "NULL");
+  }
+  printf("\n");
+  return 0;
+}
 
 void init(){
   sqlite3 *sqlite;
 
   char* err_msg = NULL;
-  int status = sqlite3_open("benchmark.db", &sqlite);
+  int status = sqlite3_open("../release/benchmark.db", &sqlite);
   if(status){printf("STATUS:\t%i\n", status);}
 
   /* activate WAL mode*/
@@ -16,25 +23,13 @@ void init(){
   status = sqlite3_exec(sqlite, WAL_stmt, NULL, NULL, &err_msg);
   if(status){printf("WAL - STATUS:\t%i\n", status);}
 
-  /* activate csv mode*/
-  char* stmnt = "mode csv";
-  status = sqlite3_exec(sqlite, stmnt, NULL, NULL, &err_msg);
-  if(status){printf("CSV - STATUS:\t%i\terror: %s\n", status, err_msg);}
-
-  /* create tables */
-  stmnt = ".read ../sql/create_tables.sql;";
-  status = sqlite3_exec(sqlite, stmnt, NULL, NULL, &err_msg);
-  if(status){printf("Create table - STATUS:\t%i\n", status);}
-
   /* load data*/
-  stmnt = ".read ../sql/load_data.sql;";
-  status = sqlite3_exec(sqlite, stmnt, NULL, NULL, &err_msg);
-  if(status){printf("Data load - STATUS:\t%i\n", status);}
-
+  char* stmnt = "select * from Address;";
+  status = sqlite3_exec(sqlite, stmnt, callback, NULL, &err_msg);
+  if(status){printf("Select - STATUS:\t%i\n", status);}
 
   status = sqlite3_close(sqlite);
   if(status){printf("STATUS:\t%i\n", status);}
-  
 }
 
 
