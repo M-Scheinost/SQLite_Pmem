@@ -1,3 +1,4 @@
+#!/usr/bin/python3
 """
 Program that extracts data from flat_out data files and creates csv files under raw data
 
@@ -10,18 +11,24 @@ Yes they are the original authors but their code is so shitty i changed nearly a
 
 
 import glob
-#import sqlite3
+import threading
 
-# conn=sqlite3.connect('tpce')
-# cur=conn.cursor()
 
-for file in glob.glob("../TPC-E/flat_out/*.txt"):
-    file_name=file[18:]
+class myThread (threading.Thread):
+   def __init__(self, path):
+      threading.Thread.__init__(self)
+      self.path = path
+   def run(self):
+      print ("Starting " + self.path)
+      parse_file(self.path)
+      print ("Exiting " + self.path)
+
+def parse_file(path):
+    file_name=path[18:]
     file_name = file_name.strip('.txt')
-    print(file_name)
     table_name=file_name.strip('.')
     try:
-        with open(file) as data:
+        with open(path) as data:
             rows=data.readlines()
             csv_rows=[]
             for row in rows:
@@ -32,3 +39,15 @@ for file in glob.glob("../TPC-E/flat_out/*.txt"):
                 output.writelines(csv_rows)
     except:
         print('File: ' + file_name + ' not found')
+
+
+
+threads = []
+for file in glob.glob("../TPC-E/flat_out/*.txt"):
+    thread = myThread(file)
+    threads.append(thread)
+    thread.start()
+
+for thread in threads:
+    thread.join()
+
