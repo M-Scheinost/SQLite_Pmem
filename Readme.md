@@ -28,7 +28,7 @@ The cmake supports Debug and Release mode, so set the -CMAKE_BUILD_TYPE accordin
 
 ## EGenLoader
 ```
-EGen v1.9.0
+EGen v1.14.0
 Usage:
 EGenLoader [options] 
 
