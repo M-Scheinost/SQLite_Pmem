@@ -1,4 +1,5 @@
 # TODOS
+- change benchmark to tatp, tpc-e doesn't make any sense as it is a client server OLTP benchmark and i don't have a client server relationship here
 - change the benchmark to tpc-e
     - added tpc-e folders 
 - dynamic file_sizes similar to vector or other strategy
