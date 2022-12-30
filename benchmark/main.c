@@ -1,5 +1,5 @@
 #include "../sqlite/sqlite3.h"
-#include "../vfs/pmem_vfs.h"
+#include "helper.h"
 #include "stdio.h"
 
 static int callback(void *NotUsed, int argc, char **argv, char **azColName){
@@ -20,13 +20,8 @@ void init(){
 
   /* activate WAL mode*/
   char* WAL_stmt = "PRAGMA journal_mode = WAL;";
-  status = sqlite3_exec(sqlite, WAL_stmt, NULL, NULL, &err_msg);
+  status = sqlite3_exec(sqlite, sqlite_init, NULL, NULL, &err_msg);
   if(status){printf("WAL - STATUS:\t%i\n", status);}
-
-  /* load data*/
-  char* stmnt = "select * from Address;";
-  status = sqlite3_exec(sqlite, stmnt, callback, NULL, &err_msg);
-  if(status){printf("Select - STATUS:\t%i\n", status);}
 
   status = sqlite3_close(sqlite);
   if(status){printf("STATUS:\t%i\n", status);}
@@ -34,6 +29,7 @@ void init(){
 
 
 int main (int argc, char** argv){
-
+  printf("init sqlite\n");
   init();
+  printf("init done\n");
 }

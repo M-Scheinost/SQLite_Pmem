@@ -9,7 +9,7 @@ cmake_minimum_required(VERSION 3.10 FATAL_ERROR)
 set(PROJECT_NAME sqlite)
 
 # define project for C language
-project(${PROJECT_NAME} C)
+project(${PROJECT_NAME} C CXX)
 
 message("Building on: ${CMAKE_SYSTEM_NAME}")
 
@@ -101,6 +101,7 @@ endif()
 
 add_executable(bench ${BENCHMARK_MAIN_FILE})
 target_link_libraries(bench ${BENCHMARK_FILES} sqlite vfs Threads::Threads pmem pmemlog dl m)
+# set_target_properties(bench PROPERTIES LINKER_LANGUAGE CXX)
 
 #----------------------------------------------
 #   build test executable

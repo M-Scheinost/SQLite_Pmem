@@ -1,8 +1,8 @@
 #include "cxxopts.hpp"
-#include "dbbench/benchmarks/tatp.hpp"
-#include "dbbench/runner.hpp"
+//#include "dbbench/benchmarks/tatp.hpp"
+//#include "dbbench/runner.hpp"
 #include "helpers.hpp"
-#include "sqlite3.hpp"
+#include "sqlite3.h"
 
 #include <utility>
 
