@@ -65,4 +65,4 @@ debug
 TPC-E/bin
 TPC-E/flat_out
 benchmark/csv_data
-bin
+*.ini
