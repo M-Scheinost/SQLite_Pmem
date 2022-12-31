@@ -1,3 +1,8 @@
+#define SIZE_FACTOR_SMALL 100000
+#define SIZE_FACTOR_MEDIUM 100000000
+#define SIZE_FACTOR_LARGE 100000000000
+
+
 const char sqlite_init[] = "PRAGMA journal_mode = WAL;       "\
                     "DROP TABLE IF EXISTS call_forwarding;                   "\
                     "DROP TABLE IF EXISTS special_facility;                  "\
