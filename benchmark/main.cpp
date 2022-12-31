@@ -18,8 +18,10 @@ static int callback(void *NotUsed, int argc, char **argv, char **azColName){
 }
 
 void load_db(sqlite3 *db, size_t db_size){
-  dbbench::tatp::RecordGenerator record_generator(db_size);
+  dbbench::tatp::RecordGenerator record_generator(SIZE_FACTOR_SMALL);
+  int i = 0;
   while(auto record = record_generator.next()){
+    cout << i++ << flush;
     std::visit(
         overloaded{
             [&](const dbbench::tatp::SubscriberRecord &r) {
@@ -39,8 +41,9 @@ void load_db(sqlite3 *db, size_t db_size){
               insert_stmnt += std::to_string(r.msc_location) + ",";
               insert_stmnt += std::to_string(r.vlr_location) + ");";
               char* err_msg = NULL;
+              cout << insert_stmnt << endl;
               int status = sqlite3_exec(db, sqlite_init, NULL, NULL, &err_msg);
-              if(status){printf("load failed:\t%i\n", status);}
+              if(status){printf("load failed:\t%i\t%s\n", status, err_msg);}
             },
 
             [&](const dbbench::tatp::AccessInfoRecord &r) {
@@ -52,8 +55,9 @@ void load_db(sqlite3 *db, size_t db_size){
               insert_stmnt += r.data3 + ",";
               insert_stmnt += r.data4 + ");";
               char* err_msg = NULL;
+              cout << insert_stmnt << endl;
               int status = sqlite3_exec(db, sqlite_init, NULL, NULL, &err_msg);
-              if(status){printf("load failed:\t%i\n", status);}
+              if(status){printf("load failed:\t%i\t%s\n", status, err_msg);}
             },
 
             [&](const dbbench::tatp::SpecialFacilityRecord &r) {
@@ -65,8 +69,9 @@ void load_db(sqlite3 *db, size_t db_size){
               insert_stmnt += to_string(r.data_a) + ",";
               insert_stmnt += r.data_b + ");";
               char* err_msg = NULL;
+              cout << insert_stmnt << endl;
               int status = sqlite3_exec(db, sqlite_init, NULL, NULL, &err_msg);
-              if(status){printf("load failed:\t%i\n", status);}
+              if(status){printf("load failed:\t%i\t%s\n", status, err_msg);}
             },
 
             [&](const dbbench::tatp::CallForwardingRecord &r) {
@@ -76,13 +81,15 @@ void load_db(sqlite3 *db, size_t db_size){
               insert_stmnt += to_string(r.start_time) + ",";
               insert_stmnt += to_string(r.end_time) + ",";
               insert_stmnt += r.numberx + ");";
+              cout << insert_stmnt << endl;
               char* err_msg = NULL;
               int status = sqlite3_exec(db, sqlite_init, NULL, NULL, &err_msg);
-              if(status){printf("load failed:\t%i\n", status);}
+              if(status){printf("load failed:\t%i\t%s\n", status, err_msg);}
             },
         },
         *record);
   }
+  std::cout << std::endl;
 }
 
 void init(size_t db_size){
@@ -97,7 +104,11 @@ void init(size_t db_size){
   status = sqlite3_exec(sqlite, sqlite_init, NULL, NULL, &err_msg);
   if(status){printf("Init status:\t%i\n", status);}
 
-  load_db(sqlite,db_size);
+  load_db(sqlite ,db_size);
+
+  const char* stmt = "select * from subscriber;";
+  status = sqlite3_exec(sqlite, stmt, callback, NULL, &err_msg);
+  if(status){printf("Init status:\t%i\n", status);}
 
   status = sqlite3_close(sqlite);
   if(status){printf("STATUS:\t%i\n", status);}
