@@ -1,4 +1,4 @@
-#define sqlite_init "PRAGMA journal_mode = WAL;       "\
+const char* sqlite_init = "PRAGMA journal_mode = WAL;       "\
                     "DROP TABLE IF EXISTS call_forwarding;                   "\
                     "DROP TABLE IF EXISTS special_facility;                  "\
                     "DROP TABLE IF EXISTS access_info;                       "\
@@ -73,4 +73,44 @@
                     "    PRIMARY KEY (s_id, sf_type, start_time),            "\
                     "    FOREIGN KEY (s_id, sf_type)                         "\
                     "        REFERENCES special_facility (s_id, sf_type)     "\
-                    ");"
+                    ");";
+
+const char* tatp_statement_sql[] = {"SELECT * "
+          "FROM subscriber "
+          "WHERE s_id = ?;",
+
+          "SELECT cf.numberx "
+          "FROM special_facility AS sf, call_forwarding AS cf "
+          "WHERE sf.s_id = ? AND sf.sf_type = ? AND sf.is_active = 1 "
+          "  AND cf.s_id = sf.s_id AND cf.sf_type = sf.sf_type "
+          "  AND cf.start_time <= ? AND ? < cf.end_time;",
+
+          "SELECT data1, data2, data3, data4 "
+          "FROM access_info "
+          "WHERE s_id = ? AND ai_type = ?;",
+
+          "UPDATE subscriber "
+          "SET bit_1 = ? "
+          "WHERE s_id = ?;",
+
+          "UPDATE special_facility "
+          "SET data_a = ? "
+          "WHERE s_id = ? AND sf_type = ?;",
+
+          "UPDATE subscriber "
+          "SET vlr_location = ? "
+          "WHERE sub_nbr = ?;",
+
+          "SELECT s_id "
+          "FROM subscriber "
+          "WHERE sub_nbr = ?;",
+
+          "SELECT sf_type "
+          "FROM special_facility "
+          "WHERE s_id = ?;",
+
+          "INSERT INTO call_forwarding "
+          "VALUES (?, ?, ?, ?, ?);",
+
+          "DELETE FROM call_forwarding "
+          "WHERE s_id = ? AND sf_type = ? AND start_time = ?;"};

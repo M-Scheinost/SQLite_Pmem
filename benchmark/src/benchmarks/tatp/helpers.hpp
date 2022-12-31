@@ -23,8 +23,7 @@ cxxopts::Options tatp_options(const std::string &program,
   return options;
 }
 
-std::vector<std::string>
-tatp_create_sql(const std::string &bool_type, const std::string &uint8_type,
+std::vector<std::string> tatp_create_sql(const std::string &bool_type, const std::string &uint8_type,
                 const std::string &uint32_type, const std::string &uint64_type,
                 const std::string &string_type, bool enable_foreign_keys) {
   std::vector<std::string> sql = {"DROP TABLE IF EXISTS call_forwarding",
