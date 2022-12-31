@@ -1,4 +1,4 @@
-const char* sqlite_init = "PRAGMA journal_mode = WAL;       "\
+const char sqlite_init[] = "PRAGMA journal_mode = WAL;       "\
                     "DROP TABLE IF EXISTS call_forwarding;                   "\
                     "DROP TABLE IF EXISTS special_facility;                  "\
                     "DROP TABLE IF EXISTS access_info;                       "\

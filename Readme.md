@@ -28,6 +28,7 @@ The cmake supports Debug and Release mode, so set the -CMAKE_BUILD_TYPE accordin
 - sqlite3 from sqlite.org
 - TATP from https://tatpbenchmark.sourceforge.net/
 - benchmark setup from: https://github.com/UWHustle/sqlite-past-present-future
+- dbbench: https://github.com/kpgaffney/dbbench
 
 
 Author
