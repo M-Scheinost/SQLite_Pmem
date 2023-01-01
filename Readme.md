@@ -10,7 +10,7 @@ I made a cmake file so do the magic:
 ```
 mkdir build
 cd build
-cmake ..
+cmake .. -CMAKE_BUILD_TYPE=
 make
 ```
 The cmake supports Debug and Release mode, so set the -CMAKE_BUILD_TYPE accordingly.

@@ -5,6 +5,8 @@
 #include "dbbench/runner.hpp"
 #include "cxxopts.hpp"
 
+#include "../vfs/pmem_vfs.h"
+
 using namespace std;
 template <class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
 template <class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
@@ -178,10 +180,6 @@ private:
 
 void load_db_1(sqlite3 *db, size_t db_size){
 
-  
-  sqlite3_stmt *call_forwarding;
-  sqlite3_prepare_v2(db, "INSERT INTO call_forwarding VALUES (?,?,?,?,?)", -1, &call_forwarding, NULL);
-
   dbbench::tatp::RecordGenerator record_generator(db_size);
   int i = 0;
   while(auto record = record_generator.next()){
@@ -298,11 +296,21 @@ void init(string path){
   //if(status){printf("Close:\t%i\t%s\n", status, err_msg);}
 }
 
-sqlite3* open_db(const char* path){
-  sqlite3 *db;
 
+
+
+sqlite3* open_db(const char* path, bool pmem){
+  sqlite3 *db;
   char* err_msg = NULL;
-  int status = sqlite3_open(path, &db);
+  int status;
+  int flags = SQLITE_OPEN_CREATE | SQLITE_OPEN_READWRITE;
+  if(pmem){
+    sqlite3_vfs_register(sqlite3_pmem_vfs(), 0);
+    status = sqlite3_open_v2(path, &db, flags, "PMem_VFS");
+  }
+  else{
+    status = sqlite3_open_v2(path, &db, flags, "unix");
+  }
   if(status){cout <<"Open:\t" << status << "\t" << err_msg << endl;}
   return db;
 }
@@ -322,6 +330,7 @@ int main (int argc, char** argv){
   adder("journal_mode", "Journal mode", cxxopts::value<std::string>()->default_value("DELETE"));
   adder("cache_size", "Cache size", cxxopts::value<std::string>()->default_value("-1000000"));
   adder("path", "Path", cxxopts::value<std::string>()->default_value("tatp_bench.db"));
+  adder("pmem", "Pmem", cxxopts::value<bool>()->default_value("false"));
 
   cxxopts::ParseResult result = options.parse(argc, argv);
 
@@ -334,16 +343,17 @@ int main (int argc, char** argv){
   string journal_mode = result["journal_mode"].as<std::string>();
   string cache_size = result["cache_size"].as<std::string>();
   string path = result["path"].as<std::string>();
+  bool pmem = result["pmem"].as<bool>();
 
   if (result.count("load")) {
-    sqlite3 *db = open_db(path.c_str());
+    sqlite3 *db = open_db(path.c_str(), pmem);
     load_db_1(db, n_subscriber_records);
     close_db(db);
   }
 
   if (result.count("run")) {
     std::vector<Worker> workers;
-    sqlite3 *db = open_db("../release/benchmark.db");
+    sqlite3 *db = open_db(path.c_str(), pmem);
     sqlite3_exec(db,"PRAGMA journal_mode=WAL", NULL,NULL,NULL);
     workers.emplace_back(db, n_subscriber_records);
 

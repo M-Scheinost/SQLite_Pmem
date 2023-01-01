@@ -94,6 +94,10 @@ if (SQLITE_BUILD_SHARED)
     endif()
 endif()
 
+#-------------------------------------------
+#       Fetch git stuff
+#-------------------------------------------
+
 include(FetchContent)
 FetchContent_Declare(
         cxxopts
@@ -120,7 +124,7 @@ FetchContent_MakeAvailable(dbbench)
 #----------------------------------------------
 
 add_executable(tatp_bench ${BENCHMARK_MAIN_FILE})
-target_link_libraries(tatp_bench ${BENCHMARK_FILES} sqlite vfs Threads::Threads dbbench_tatp cxxopts pmem pmemlog dl m)
+target_link_libraries(tatp_bench ${BENCHMARK_FILES} ${VFS_FILES} sqlite vfs Threads::Threads dbbench_tatp cxxopts pmem pmemlog dl m)
 set_target_properties(tatp_bench PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/tatp
 )
 
