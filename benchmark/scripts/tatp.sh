@@ -4,16 +4,16 @@
 for sf in 10000 100000 1000000; do
   for pm in "true" "false"; do
     printf "*** TATP (scale factor %s) ***\n" "$sf"
-
-    if [ $pm="true" ]
+    path=""
+    if [ "$pm" = "true" ]
     then
-      path="/mnt/pmem0/scheinost/benchmark.db"
+      path+="/mnt/pmem0/scheinost/benchmark.db"
     else
-      path="benchmark.db"
+      path+="benchmark.db"
     fi
 
     printf "Loading data into SQLite3...\n"
-    ./tatp_bench --load --records=$sf --path=$path --pmem=$pm
+    # ./tatp_bench --load --records=$sf --path=$path --pmem=$pm
 
     printf "Evaluating SQLite3...\n"
     #for journal_mode in "DELETE" "TRUNCATE" "WAL"; do
@@ -23,7 +23,7 @@ for sf in 10000 100000 1000000; do
         printf "%s\n" "$command"
         for trial in {1..3}; do
           printf "%s," "$trial"
-          eval "$command"
+          # eval "$command"
         done
       #done
     #done
