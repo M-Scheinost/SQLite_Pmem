@@ -5,7 +5,6 @@ set(BENCHMARK_FILES
     # ${CMAKE_SOURCE_DIR}/benchmark/random.c
     # ${CMAKE_SOURCE_DIR}/benchmark/raw.c
     # ${CMAKE_SOURCE_DIR}/benchmark/util.c
-    ${CMAKE_SOURCE_DIR}/benchmark/helper.h
+    # ${CMAKE_SOURCE_DIR}/benchmark/helper.hpp
     )
-set(BENCHMARK_MAIN_FILE ${CMAKE_SOURCE_DIR}/benchmark/main.cpp)
-#set(BENCHMARK_MAIN_FILE ${CMAKE_SOURCE_DIR}/benchmark/src/benchmarks/tatp/tatp_sqlite3.cpp)
+set(BENCHMARK_MAIN_FILE ${CMAKE_SOURCE_DIR}/benchmark/bench_main.cpp)

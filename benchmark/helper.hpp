@@ -1,7 +1,7 @@
-#define SIZE_FACTOR_SMALL  10000
-#define SIZE_FACTOR_MEDIUM 100000
-#define SIZE_FACTOR_LARGE  1000000
+#ifndef SQLITE_PERFORMANCE_TATP_HELPERS_HPP
+#define SQLITE_PERFORMANCE_TATP_HELPERS_HPP
 
+#include "cxxopts.hpp"
 
 const char sqlite_init[] = "PRAGMA journal_mode = WAL;"\
                     "DROP TABLE IF EXISTS call_forwarding;"\
@@ -117,3 +117,26 @@ const char* tatp_statement_sql[] = {"SELECT * "
 
           "DELETE FROM call_forwarding "
           "WHERE s_id = ? AND sf_type = ? AND start_time = ?;"};
+
+
+
+cxxopts::Options tatp_options(const std::string &program,
+                              const std::string &help_string = "") {
+  cxxopts::Options options(program, help_string);
+  cxxopts::OptionAdder adder = options.add_options();
+  adder("load", "Load the database");
+  adder("run", "Run the benchmark");
+  adder("records", "Number of subscriber records",
+        cxxopts::value<uint64_t>()->default_value("1000"));
+  adder("clients", "Number of clients",
+        cxxopts::value<size_t>()->default_value("1"));
+  adder("warmup", "Warmup duration in seconds",
+        cxxopts::value<size_t>()->default_value("10"));
+  adder("measure", "Measure duration in seconds",
+        cxxopts::value<size_t>()->default_value("60"));
+  adder("help", "Print help");
+  return options;
+}
+
+
+#endif // SQLITE_PERFORMANCE_TATP_HELPERS_HPP

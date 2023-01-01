@@ -18,11 +18,7 @@ The cmake supports Debug and Release mode, so set the -CMAKE_BUILD_TYPE accordin
 # different programs which are implemented
 - __shell__: just a plain unedited sqlite shell
 - __test__: a program i use to test my pmem_vfs
-- __bench__: a program to run the benchmark i found on Github. This will soon be TPC-E
-
-# How to create the csvs
-- generate the data using `EGenLoader`
-- use the `extract.py` to transform the txt files to csvs
+- __bench__: a program to benchmark Sqlite
 
 # sources
 - sqlite3 from sqlite.org

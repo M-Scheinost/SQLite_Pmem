@@ -1,8 +1,9 @@
 #include "../sqlite/sqlite3.h"
-#include "helper.h"
+#include "helper.hpp"
 #include <iostream>
 #include "dbbench/benchmarks/tatp.hpp"
 #include "dbbench/runner.hpp"
+#include "cxxopts.hpp"
 
 using namespace std;
 template <class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
@@ -174,81 +175,6 @@ private:
   dbbench::tatp::ProcedureGenerator procedure_generator_;
 };
 
-void load_db(sqlite3 *db, size_t db_size){
-  dbbench::tatp::RecordGenerator record_generator(SIZE_FACTOR_SMALL);
-  int i = 0;
-  while(auto record = record_generator.next()){
-    if(i % 10000 == 0)
-      cout << i++ << " " << flush;
-    std::visit(
-        overloaded{
-            [&](const dbbench::tatp::SubscriberRecord &r) {
-              std::string insert_stmnt = "INSERT INTO subscriber VALUES (";
-              insert_stmnt += to_string(r.s_id) + ",";
-              insert_stmnt += r.sub_nbr + ",";
-
-              for (int i = 0; i < 10; ++i) {
-                insert_stmnt += std::to_string(r.bit[i]) + ",";
-              }
-              for (int i = 0; i < 10; ++i) {
-                insert_stmnt += std::to_string(r.hex[i]) + ",";
-              }
-              for (int i = 0; i < 10; ++i) {
-                insert_stmnt += std::to_string(r.byte2[i]) + ",";
-              }
-              insert_stmnt += std::to_string(r.msc_location) + ",";
-              insert_stmnt += std::to_string(r.vlr_location) + ");";
-              char* err_msg = NULL;
-              cout << insert_stmnt << endl;
-              int status = sqlite3_exec(db, sqlite_init, NULL, NULL, &err_msg);
-              if(status){printf("load failed:\t%i\t%s\n", status, err_msg);}
-            },
-
-            [&](const dbbench::tatp::AccessInfoRecord &r) {
-              std::string insert_stmnt = "INSERT INTO access_info VALUES (";
-              insert_stmnt += to_string(r.s_id) + ",";
-              insert_stmnt += to_string(r.ai_type) + ",";
-              insert_stmnt += to_string(r.data1) + ",";
-              insert_stmnt += to_string(r.data2) + ",";
-              insert_stmnt += r.data3 + ",";
-              insert_stmnt += r.data4 + ");";
-              char* err_msg = NULL;
-              cout << insert_stmnt << endl;
-              int status = sqlite3_exec(db, sqlite_init, NULL, NULL, &err_msg);
-              if(status){printf("load failed:\t%i\t%s\n", status, err_msg);}
-            },
-
-            [&](const dbbench::tatp::SpecialFacilityRecord &r) {
-              std::string insert_stmnt = "INSERT INTO special_facility VALUES (";
-              insert_stmnt += to_string(r.s_id) + ",";
-              insert_stmnt += to_string(r.sf_type) + ",";
-              insert_stmnt += to_string(r.is_active) + ",";
-              insert_stmnt += to_string(r.error_cntrl) + ",";
-              insert_stmnt += to_string(r.data_a) + ",";
-              insert_stmnt += r.data_b + ");";
-              char* err_msg = NULL;
-              cout << insert_stmnt << endl;
-              int status = sqlite3_exec(db, sqlite_init, NULL, NULL, &err_msg);
-              if(status){printf("load failed:\t%i\t%s\n", status, err_msg);}
-            },
-
-            [&](const dbbench::tatp::CallForwardingRecord &r) {
-              std::string insert_stmnt = "INSERT INTO call_forwarding VALUES (";
-              insert_stmnt += to_string(r.s_id) + ",";
-              insert_stmnt += to_string(r.sf_type) + ",";
-              insert_stmnt += to_string(r.start_time) + ",";
-              insert_stmnt += to_string(r.end_time) + ",";
-              insert_stmnt += r.numberx + ");";
-              cout << insert_stmnt << endl;
-              char* err_msg = NULL;
-              int status = sqlite3_exec(db, sqlite_init, NULL, NULL, &err_msg);
-              if(status){printf("load failed:\t%i\t%s\n", status, err_msg);}
-            },
-        },
-        *record);
-  }
-  std::cout << std::endl;
-}
 
 void load_db_1(sqlite3 *db, size_t db_size){
 
@@ -333,60 +259,191 @@ void load_db_1(sqlite3 *db, size_t db_size){
 }
 
 
-void init(size_t db_size){
+void init(string path){
   sqlite3 *sqlite;
 
   char* err_msg = NULL;
-  int status = sqlite3_open("../release/benchmark.db", &sqlite);
+  int status = sqlite3_open(path.c_str(), &sqlite);
   if(status){printf("Open:\t%i\t%s\n", status, err_msg);}
 
   /* activate WAL mode*/
   const char* WAL_stmt = "PRAGMA journal_mode = WAL;";
   status = sqlite3_exec(sqlite, sqlite_init, NULL, NULL, &err_msg);
-  if(status){printf("WAL:\t%i\t%s\n", status, err_msg);}
+  //if(status){printf("WAL:\t%i\t%s\n", status, err_msg);}
 
   sqlite3_exec(sqlite, "BEGIN TRANSACTION;", NULL,NULL,NULL);
-  load_db_1(sqlite ,db_size);
+  load_db_1(sqlite ,1);
   sqlite3_exec(sqlite, "END TRANSACTION;", NULL,NULL,NULL);
 
-  status = sqlite3_exec(sqlite, "select count(*) from subscriber;", callback, NULL, &err_msg);
-  if(status){printf("Select:\t%i\t%s\n", status, err_msg);}
-  status = sqlite3_exec(sqlite, "select count(*) from access_info;", callback, NULL, &err_msg);
-  if(status){printf("Select:\t%i\t%s\n", status, err_msg);}
-  status = sqlite3_exec(sqlite, "select count(*) from special_facility;", callback, NULL, &err_msg);
-  if(status){printf("Select:\t%i\t%s\n", status, err_msg);}
-  status = sqlite3_exec(sqlite, "select count(*) from call_forwarding;", callback, NULL, &err_msg);
-  if(status){printf("Select:\t%i\t%s\n", status, err_msg);}
+  // status = sqlite3_exec(sqlite, "select count(*) from subscriber;", callback, NULL, &err_msg);
+  // if(status){printf("Select:\t%i\t%s\n", status, err_msg);}
+  // status = sqlite3_exec(sqlite, "select count(*) from access_info;", callback, NULL, &err_msg);
+  // if(status){printf("Select:\t%i\t%s\n", status, err_msg);}
+  // status = sqlite3_exec(sqlite, "select count(*) from special_facility;", callback, NULL, &err_msg);
+  // if(status){printf("Select:\t%i\t%s\n", status, err_msg);}
+  // status = sqlite3_exec(sqlite, "select count(*) from call_forwarding;", callback, NULL, &err_msg);
+  // if(status){printf("Select:\t%i\t%s\n", status, err_msg);}
 
   //###############################
   //  Test
   //###############################
   std::vector<Worker> workers;
-  workers.emplace_back(sqlite, db_size);
+  //workers.emplace_back(sqlite, db_size);
   size_t try_out {0};
   double throughput = dbbench::run(workers, try_out, try_out);
   cout << "Throughput: " << throughput << endl;
 
 
   status = sqlite3_close(sqlite);
-  if(status){printf("Close:\t%i\t%s\n", status, err_msg);}
+  //if(status){printf("Close:\t%i\t%s\n", status, err_msg);}
+}
+
+sqlite3* open_db(const char* path){
+  sqlite3 *db;
+
+  char* err_msg = NULL;
+  int status = sqlite3_open(path, &db);
+  if(status){cout <<"Open:\t" << status << "\t" << err_msg << endl;}
+  return db;
+}
+
+void close_db(sqlite3* db){
+  char* err_msg = NULL;
+  int status = sqlite3_close(db);
+  if(status){cout <<"Close:\t" << status << "\t" << err_msg << endl;}
 }
 
 
 int main (int argc, char** argv){
 
-  if(argc != 2){
-    cout << "not enough arguments\n";
-    exit(1);
+  cxxopts::Options options = tatp_options("tatp_sqlite3", "TATP on SQLite3");
+
+  cxxopts::OptionAdder adder = options.add_options("SQLite3");
+  adder("journal_mode", "Journal mode",
+        cxxopts::value<std::string>()->default_value("DELETE"));
+  adder("cache_size", "Cache size",
+        cxxopts::value<std::string>()->default_value("-1000000"));
+
+  cxxopts::ParseResult result = options.parse(argc, argv);
+
+  if (result.count("help")) {
+    std::cout << options.help();
+    return 0;
   }
-  if(argv[1] == "1")
-    init(SIZE_FACTOR_SMALL);
-  else if(argv[1] == "10")
-    init(SIZE_FACTOR_MEDIUM);
-  else
-    init(SIZE_FACTOR_LARGE);
 
+  uint64_t n_subscriber_records = result["records"].as<uint64_t>();
+  string journal_mode = result["journal_mode"].as<std::string>();
+  string cache_size = result["cache_size"].as<std::string>();
 
-  
+  if (result.count("load")) {
+    sqlite3 *db = open_db("../release/benchmark.db");
+    load_db_1(db, n_subscriber_records);
+    close_db(db);
+  }
+
+  if (result.count("run")) {
+    std::vector<Worker> workers;
+    sqlite3 *db = open_db("../release/benchmark.db");
+    sqlite3_exec(db,"PRAGMA journal_mode=WAL", NULL,NULL,NULL);
+    workers.emplace_back(db, n_subscriber_records);
+
+    double throughput = dbbench::run(workers, result["warmup"].as<size_t>(),
+                                     result["measure"].as<size_t>());
+    std::cout << throughput << std::endl;
+    close_db(db);
+  }
   
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* function which is not working properly don't know why tho
+void load_db(sqlite3 *db, size_t db_size){
+  dbbench::tatp::RecordGenerator record_generator(1);
+  int i = 0;
+  while(auto record = record_generator.next()){
+    if(i % 10000 == 0)
+      cout << i++ << " " << flush;
+    std::visit(
+        overloaded{
+            [&](const dbbench::tatp::SubscriberRecord &r) {
+              std::string insert_stmnt = "INSERT INTO subscriber VALUES (";
+              insert_stmnt += to_string(r.s_id) + ",";
+              insert_stmnt += r.sub_nbr + ",";
+
+              for (int i = 0; i < 10; ++i) {
+                insert_stmnt += std::to_string(r.bit[i]) + ",";
+              }
+              for (int i = 0; i < 10; ++i) {
+                insert_stmnt += std::to_string(r.hex[i]) + ",";
+              }
+              for (int i = 0; i < 10; ++i) {
+                insert_stmnt += std::to_string(r.byte2[i]) + ",";
+              }
+              insert_stmnt += std::to_string(r.msc_location) + ",";
+              insert_stmnt += std::to_string(r.vlr_location) + ");";
+              char* err_msg = NULL;
+              cout << insert_stmnt << endl;
+              int status = sqlite3_exec(db, sqlite_init, NULL, NULL, &err_msg);
+              if(status){printf("load failed:\t%i\t%s\n", status, err_msg);}
+            },
+
+            [&](const dbbench::tatp::AccessInfoRecord &r) {
+              std::string insert_stmnt = "INSERT INTO access_info VALUES (";
+              insert_stmnt += to_string(r.s_id) + ",";
+              insert_stmnt += to_string(r.ai_type) + ",";
+              insert_stmnt += to_string(r.data1) + ",";
+              insert_stmnt += to_string(r.data2) + ",";
+              insert_stmnt += r.data3 + ",";
+              insert_stmnt += r.data4 + ");";
+              char* err_msg = NULL;
+              cout << insert_stmnt << endl;
+              int status = sqlite3_exec(db, sqlite_init, NULL, NULL, &err_msg);
+              if(status){printf("load failed:\t%i\t%s\n", status, err_msg);}
+            },
+
+            [&](const dbbench::tatp::SpecialFacilityRecord &r) {
+              std::string insert_stmnt = "INSERT INTO special_facility VALUES (";
+              insert_stmnt += to_string(r.s_id) + ",";
+              insert_stmnt += to_string(r.sf_type) + ",";
+              insert_stmnt += to_string(r.is_active) + ",";
+              insert_stmnt += to_string(r.error_cntrl) + ",";
+              insert_stmnt += to_string(r.data_a) + ",";
+              insert_stmnt += r.data_b + ");";
+              char* err_msg = NULL;
+              cout << insert_stmnt << endl;
+              int status = sqlite3_exec(db, sqlite_init, NULL, NULL, &err_msg);
+              if(status){printf("load failed:\t%i\t%s\n", status, err_msg);}
+            },
+
+            [&](const dbbench::tatp::CallForwardingRecord &r) {
+              std::string insert_stmnt = "INSERT INTO call_forwarding VALUES (";
+              insert_stmnt += to_string(r.s_id) + ",";
+              insert_stmnt += to_string(r.sf_type) + ",";
+              insert_stmnt += to_string(r.start_time) + ",";
+              insert_stmnt += to_string(r.end_time) + ",";
+              insert_stmnt += r.numberx + ");";
+              cout << insert_stmnt << endl;
+              char* err_msg = NULL;
+              int status = sqlite3_exec(db, sqlite_init, NULL, NULL, &err_msg);
+              if(status){printf("load failed:\t%i\t%s\n", status, err_msg);}
+            },
+        },
+        *record);
+  }
+  std::cout << std::endl;
+}
+*/

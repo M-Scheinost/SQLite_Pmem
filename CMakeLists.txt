@@ -4,7 +4,7 @@
 #--------------------------------------------
 #--------------------------------------------
 # SQLite build script for amalgamation
-cmake_minimum_required(VERSION 3.10 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.16 FATAL_ERROR)
 
 set(PROJECT_NAME sqlite)
 
@@ -96,6 +96,17 @@ endif()
 
 include(FetchContent)
 FetchContent_Declare(
+        cxxopts
+        GIT_REPOSITORY https://github.com/jarro2783/cxxopts.git
+        GIT_TAG v2.2.1
+)
+set(CXXOPTS_BUILD_EXAMPLES OFF)
+set(CXXOPTS_BUILD_TESTS OFF)
+set(CXXOPTS_ENABLE_INSTALL OFF)
+set(CXXOPTS_ENABLE_WARNINGS OFF)
+FetchContent_MakeAvailable(cxxopts)
+
+FetchContent_Declare(
         dbbench
         GIT_REPOSITORY https://github.com/kpgaffney/dbbench.git
         GIT_TAG main
@@ -109,7 +120,7 @@ FetchContent_MakeAvailable(dbbench)
 #----------------------------------------------
 
 add_executable(bench ${BENCHMARK_MAIN_FILE})
-target_link_libraries(bench ${BENCHMARK_FILES} sqlite vfs Threads::Threads dbbench_tatp pmem pmemlog dl m)
+target_link_libraries(bench ${BENCHMARK_FILES} sqlite vfs Threads::Threads dbbench_tatp cxxopts pmem pmemlog dl m)
 # set_target_properties(bench PROPERTIES LINKER_LANGUAGE CXX)
 
 #----------------------------------------------
