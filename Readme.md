@@ -15,6 +15,14 @@ make
 ```
 The cmake supports Debug and Release mode, so set the -CMAKE_BUILD_TYPE accordingly.
 
+## How to run tests
+Modify the permissions of the scripts:
+```
+chmod u+x tatp/tatp.sh
+chmod u+x all.sh
+```
+Then use `./all.sh` to run the test
+
 # different programs which are implemented
 - __shell__: just a plain unedited sqlite shell
 - __test__: a program i use to test my pmem_vfs

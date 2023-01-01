@@ -116,12 +116,13 @@ FetchContent_MakeAvailable(dbbench)
 
 
 #----------------------------------------------
-#   build bench executable
+#   build TATP bench executable
 #----------------------------------------------
 
-add_executable(bench ${BENCHMARK_MAIN_FILE})
-target_link_libraries(bench ${BENCHMARK_FILES} sqlite vfs Threads::Threads dbbench_tatp cxxopts pmem pmemlog dl m)
-# set_target_properties(bench PROPERTIES LINKER_LANGUAGE CXX)
+add_executable(tatp_bench ${BENCHMARK_MAIN_FILE})
+target_link_libraries(tatp_bench ${BENCHMARK_FILES} sqlite vfs Threads::Threads dbbench_tatp cxxopts pmem pmemlog dl m)
+set_target_properties(tatp_bench PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/tatp
+)
 
 #----------------------------------------------
 #   build test executable
@@ -164,3 +165,10 @@ install(TARGETS ${TO_INSTALL}
         LIBRARY DESTINATION "${INSTALL_LIB_DIR}" )
 install(FILES ${HDR_FILES} DESTINATION "${INSTALL_INC_DIR}")
 
+
+
+# Scripts.
+# configure_file(scripts/benchmarks/ssb.sh ${CMAKE_CURRENT_BINARY_DIR}/ssb/ssb.sh COPYONLY)
+configure_file(benchmark/scripts/tatp.sh ${CMAKE_CURRENT_BINARY_DIR}/tatp/tatp.sh COPYONLY)
+# configure_file(scripts/benchmarks/blob.sh ${CMAKE_CURRENT_BINARY_DIR}/blob/blob.sh COPYONLY)
+configure_file(benchmark/scripts/all.sh ${CMAKE_CURRENT_BINARY_DIR}/all.sh COPYONLY)

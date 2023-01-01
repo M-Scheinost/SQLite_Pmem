@@ -319,10 +319,9 @@ int main (int argc, char** argv){
   cxxopts::Options options = tatp_options("tatp_sqlite3", "TATP on SQLite3");
 
   cxxopts::OptionAdder adder = options.add_options("SQLite3");
-  adder("journal_mode", "Journal mode",
-        cxxopts::value<std::string>()->default_value("DELETE"));
-  adder("cache_size", "Cache size",
-        cxxopts::value<std::string>()->default_value("-1000000"));
+  adder("journal_mode", "Journal mode", cxxopts::value<std::string>()->default_value("DELETE"));
+  adder("cache_size", "Cache size", cxxopts::value<std::string>()->default_value("-1000000"));
+  adder("path", "Path", cxxopts::value<std::string>()->default_value("tatp_bench.db"));
 
   cxxopts::ParseResult result = options.parse(argc, argv);
 
@@ -334,9 +333,10 @@ int main (int argc, char** argv){
   uint64_t n_subscriber_records = result["records"].as<uint64_t>();
   string journal_mode = result["journal_mode"].as<std::string>();
   string cache_size = result["cache_size"].as<std::string>();
+  string path = result["path"].as<std::string>();
 
   if (result.count("load")) {
-    sqlite3 *db = open_db("../release/benchmark.db");
+    sqlite3 *db = open_db(path.c_str());
     load_db_1(db, n_subscriber_records);
     close_db(db);
   }
