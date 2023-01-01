@@ -17,6 +17,163 @@ static int callback(void *NotUsed, int argc, char **argv, char **azColName){
   return 0;
 }
 
+class Worker {
+public:
+  Worker(sqlite3 *db, size_t db_size)
+      : db(db), procedure_generator_(db_size) {
+  }
+
+  bool operator()() {
+    return std::visit(
+        overloaded{
+            [&](const dbbench::tatp::GetSubscriberData &p) {
+              sqlite3_stmt *state_1;
+              sqlite3_prepare_v2(db, tatp_statement_sql[0], -1, &state_1, NULL);
+              sqlite3_bind_int64(state_1, 1, (sqlite3_int64)p.s_id);
+              sqlite3_step(state_1);
+              sqlite3_finalize(state_1);
+              return true;
+            },
+
+            [&](const dbbench::tatp::GetNewDestination &p) {
+              sqlite3_stmt *stmnt;
+              sqlite3_prepare_v2(db, tatp_statement_sql[1], -1, &stmnt, NULL);
+              sqlite3_bind_int64(stmnt, 1, (sqlite3_int64)p.s_id);
+              sqlite3_bind_int(stmnt, 2, (int)p.sf_type);
+              sqlite3_bind_int(stmnt, 3, (int)p.start_time);
+              sqlite3_bind_int(stmnt, 4, (int)p.end_time);
+              int res = sqlite3_step(stmnt);
+              if(res == SQLITE_ROW){
+                size_t count = sqlite3_column_int(stmnt,0);
+                res = sqlite3_step(stmnt);
+                if(res == SQLITE_DONE)
+                  sqlite3_finalize(stmnt);
+                  return count > 0;
+                }
+                return false;
+            },
+
+            [&](const dbbench::tatp::GetAccessData &p) {
+              sqlite3_stmt *stmnt;
+              sqlite3_prepare_v2(db, tatp_statement_sql[2], -1, &stmnt, NULL);
+              sqlite3_bind_int64(stmnt, 1, (sqlite3_int64)p.s_id);
+              sqlite3_bind_int(stmnt, 2, (int)p.ai_type);
+              int res = sqlite3_step(stmnt);
+              if(res == SQLITE_ROW){
+                size_t count = sqlite3_column_int(stmnt,0);
+                res = sqlite3_step(stmnt);
+                if(res == SQLITE_DONE)
+                  sqlite3_finalize(stmnt);
+                  return count > 0;
+                }
+              return false;
+            },
+
+            [&](const dbbench::tatp::UpdateSubscriberData &p) {
+              sqlite3_stmt *stmnt;
+              sqlite3_prepare_v2(db, tatp_statement_sql[3], -1, &stmnt, NULL);
+              sqlite3_bind_int(stmnt, 1, (int)p.bit_1);
+              sqlite3_bind_int64(stmnt, 2, (sqlite3_int64)p.s_id);
+              int res2 = sqlite3_step(stmnt);
+              sqlite3_finalize(stmnt);
+
+              sqlite3_prepare_v2(db, tatp_statement_sql[4], -1, &stmnt, NULL);
+              sqlite3_bind_int(stmnt, 1, (int)p.data_a);
+              sqlite3_bind_int64(stmnt, 2, (sqlite3_int64)p.s_id);
+              sqlite3_bind_int(stmnt, 3, (int)p.sf_type);
+              int res1 = sqlite3_step(stmnt);
+              sqlite3_finalize(stmnt);
+ 
+              return res1 == SQLITE_DONE && res2 == SQLITE_DONE;
+            },
+
+            [&](const dbbench::tatp::UpdateLocation &p) {
+              sqlite3_stmt *stmnt;
+              sqlite3_prepare_v2(db, tatp_statement_sql[5], -1, &stmnt, NULL);
+              sqlite3_bind_int64(stmnt, 1, (sqlite3_int64)p.vlr_location);
+              sqlite3_bind_text(stmnt, 2, p.sub_nbr.c_str(), -1, SQLITE_TRANSIENT);
+              int res2 = sqlite3_step(stmnt);
+              sqlite3_finalize(stmnt);
+              return true;
+            },
+
+            [&](const dbbench::tatp::InsertCallForwarding &p) {
+
+              sqlite3_stmt *stmnt;
+              sqlite3_prepare_v2(db, tatp_statement_sql[6], -1, &stmnt, NULL);
+              sqlite3_bind_text(stmnt, 1, p.sub_nbr.c_str(), -1, SQLITE_TRANSIENT);
+              int res = sqlite3_step(stmnt);
+              size_t s_id;
+              if(res == SQLITE_ROW){
+                s_id = sqlite3_column_int64(stmnt,0);
+                res = sqlite3_step(stmnt);
+                if(res == SQLITE_DONE)
+                  sqlite3_finalize(stmnt);
+                }
+
+              sqlite3_prepare_v2(db, tatp_statement_sql[7], -1, &stmnt, NULL);
+              sqlite3_bind_int64(stmnt, 1, (sqlite3_int64)s_id);
+              res = sqlite3_step(stmnt);
+              if(res == SQLITE_ROW){
+                size_t count = sqlite3_column_int64(stmnt,0);
+                res = sqlite3_step(stmnt);
+                if(res == SQLITE_DONE)
+                  sqlite3_finalize(stmnt);
+                }
+
+              sqlite3_prepare_v2(db, tatp_statement_sql[8], -1, &stmnt, NULL);
+              sqlite3_bind_int64(stmnt, 1, (sqlite3_int64)s_id);
+              sqlite3_bind_int(stmnt, 2, (int)p.sf_type);
+              sqlite3_bind_int(stmnt, 3, (int)p.start_time);
+              sqlite3_bind_int(stmnt, 4, (int)p.end_time);
+              sqlite3_bind_text(stmnt, 5, p.numberx.c_str(), -1, SQLITE_TRANSIENT);
+              int rc = sqlite3_step(stmnt);
+              if(res == SQLITE_ROW){
+                size_t count = sqlite3_column_int64(stmnt,0);
+                res = sqlite3_step(stmnt);
+                if(res == SQLITE_DONE)
+                  sqlite3_finalize(stmnt);
+                }
+
+              if (rc == SQLITE_CONSTRAINT) {
+                return false;
+              }
+              return true;
+            },
+
+            [&](const dbbench::tatp::DeleteCallForwarding &p) {
+              sqlite3_stmt *stmnt;
+              sqlite3_prepare_v2(db, tatp_statement_sql[6], -1, &stmnt, NULL);
+              sqlite3_bind_text(stmnt, 1, p.sub_nbr.c_str(), -1, SQLITE_TRANSIENT);
+              int res = sqlite3_step(stmnt);
+              size_t s_id;
+              if(res == SQLITE_ROW){
+                s_id = sqlite3_column_int64(stmnt,0);
+                res = sqlite3_step(stmnt);
+                if(res == SQLITE_DONE)
+                  sqlite3_finalize(stmnt);
+                }
+
+              sqlite3_prepare_v2(db, tatp_statement_sql[9], -1, &stmnt, NULL);
+              
+              sqlite3_bind_int64(stmnt, 1, (sqlite3_int64)s_id);
+              sqlite3_bind_int(stmnt, 2, (int)p.sf_type);
+              sqlite3_bind_int(stmnt, 3, (int)p.start_time);
+              int res1 = sqlite3_step(stmnt);
+              sqlite3_finalize(stmnt);
+ 
+              return res1 == SQLITE_DONE;
+            },
+        },
+        procedure_generator_.next());
+  }
+
+private:
+  sqlite3 *db;
+  size_t db_size;
+  dbbench::tatp::ProcedureGenerator procedure_generator_;
+};
+
 void load_db(sqlite3 *db, size_t db_size){
   dbbench::tatp::RecordGenerator record_generator(SIZE_FACTOR_SMALL);
   int i = 0;
@@ -102,7 +259,7 @@ void load_db_1(sqlite3 *db, size_t db_size){
   dbbench::tatp::RecordGenerator record_generator(db_size);
   int i = 0;
   while(auto record = record_generator.next()){
-    if(i++ % 10000 == 0)
+    if(i++ % 100000 == 0)
       cout << i << " " << flush;
     std::visit(
         overloaded{
@@ -201,6 +358,16 @@ void init(size_t db_size){
   status = sqlite3_exec(sqlite, "select count(*) from call_forwarding;", callback, NULL, &err_msg);
   if(status){printf("Select:\t%i\t%s\n", status, err_msg);}
 
+  //###############################
+  //  Test
+  //###############################
+  std::vector<Worker> workers;
+  workers.emplace_back(sqlite, db_size);
+  size_t try_out {0};
+  double throughput = dbbench::run(workers, try_out, try_out);
+  cout << "Throughput: " << throughput << endl;
+
+
   status = sqlite3_close(sqlite);
   if(status){printf("Close:\t%i\t%s\n", status, err_msg);}
 }
@@ -218,5 +385,8 @@ int main (int argc, char** argv){
     init(SIZE_FACTOR_MEDIUM);
   else
     init(SIZE_FACTOR_LARGE);
+
+
+  
   
 }

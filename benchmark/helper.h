@@ -1,6 +1,6 @@
-#define SIZE_FACTOR_SMALL  100000
-#define SIZE_FACTOR_MEDIUM 1000000
-#define SIZE_FACTOR_LARGE  10000000
+#define SIZE_FACTOR_SMALL  10000
+#define SIZE_FACTOR_MEDIUM 100000
+#define SIZE_FACTOR_LARGE  1000000
 
 
 const char sqlite_init[] = "PRAGMA journal_mode = WAL;"\
