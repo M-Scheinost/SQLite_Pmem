@@ -13,7 +13,7 @@ for sf in 10000 100000 1000000; do
     fi
 
     printf "Loading data into SQLite3...\n"
-    # ./tatp_bench --load --records=$sf --path=$path --pmem=$pm
+    ./tatp_bench --load --records=$sf --path=$path --pmem=$pm
 
     printf "Evaluating SQLite3...\n"
     #for journal_mode in "DELETE" "TRUNCATE" "WAL"; do
@@ -22,8 +22,8 @@ for sf in 10000 100000 1000000; do
         command="./tatp_bench --run --records=$sf --journal_mode=$journal_mode --cache_size=$cache_size --path=$path --pmem=$pm"
         printf "%s\n" "$command"
         for trial in {1..3}; do
-          printf "%s," "$trial"
-          # eval "$command"
+          #printf "%s," "$trial"
+          eval "$command"
         done
       #done
     #done
