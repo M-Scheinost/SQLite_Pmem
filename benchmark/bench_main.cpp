@@ -183,8 +183,8 @@ void load_db_1(sqlite3 *db, size_t db_size){
   dbbench::tatp::RecordGenerator record_generator(db_size);
   int i = 0;
   while(auto record = record_generator.next()){
-    if(i++ % 100000 == 0)
-      cout << i << " " << flush;
+    // if(i++ % 100000 == 0)
+    //   cout << i << " " << flush;
     std::visit(
         overloaded{
             [&](const dbbench::tatp::SubscriberRecord &r) {
