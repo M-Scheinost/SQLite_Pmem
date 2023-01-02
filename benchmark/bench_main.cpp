@@ -20,6 +20,18 @@ static int callback(void *NotUsed, int argc, char **argv, char **azColName){
   return 0;
 }
 
+int step(sqlite3_stmt *stmt, size_t &count){
+  while(sqlite3_step(stmt) == SQLITE_ROW){
+    count++;
+  }
+  return sqlite3_reset(stmt);
+}
+
+int step(sqlite3_stmt *stmt){
+  size_t count;
+  return step(stmt, count);
+}
+
 class Worker {
 public:
   Worker(sqlite3 *db, size_t db_size)
@@ -33,8 +45,7 @@ public:
               sqlite3_stmt *state_1;
               sqlite3_prepare_v2(db, tatp_statement_sql[0], -1, &state_1, NULL);
               sqlite3_bind_int64(state_1, 1, (sqlite3_int64)p.s_id);
-              sqlite3_step(state_1);
-              sqlite3_finalize(state_1);
+              int rc = step(state_1);
               return true;
             },
 
@@ -45,15 +56,10 @@ public:
               sqlite3_bind_int(stmnt, 2, (int)p.sf_type);
               sqlite3_bind_int(stmnt, 3, (int)p.start_time);
               sqlite3_bind_int(stmnt, 4, (int)p.end_time);
-              int res = sqlite3_step(stmnt);
-              if(res == SQLITE_ROW){
-                size_t count = sqlite3_column_int(stmnt,0);
-                res = sqlite3_step(stmnt);
-                if(res == SQLITE_DONE)
-                  sqlite3_finalize(stmnt);
-                  return count > 0;
-                }
-                return false;
+
+              size_t count {0};
+              int rc = step(stmnt, count);
+              return count > 0;
             },
 
             [&](const dbbench::tatp::GetAccessData &p) {
@@ -61,15 +67,10 @@ public:
               sqlite3_prepare_v2(db, tatp_statement_sql[2], -1, &stmnt, NULL);
               sqlite3_bind_int64(stmnt, 1, (sqlite3_int64)p.s_id);
               sqlite3_bind_int(stmnt, 2, (int)p.ai_type);
-              int res = sqlite3_step(stmnt);
-              if(res == SQLITE_ROW){
-                size_t count = sqlite3_column_int(stmnt,0);
-                res = sqlite3_step(stmnt);
-                if(res == SQLITE_DONE)
-                  sqlite3_finalize(stmnt);
-                  return count > 0;
-                }
-              return false;
+
+              size_t count {0};
+              int rc = step(stmnt, count);
+              return count > 0;
             },
 
             [&](const dbbench::tatp::UpdateSubscriberData &p) {
@@ -77,17 +78,17 @@ public:
               sqlite3_prepare_v2(db, tatp_statement_sql[3], -1, &stmnt, NULL);
               sqlite3_bind_int(stmnt, 1, (int)p.bit_1);
               sqlite3_bind_int64(stmnt, 2, (sqlite3_int64)p.s_id);
-              int res2 = sqlite3_step(stmnt);
-              sqlite3_finalize(stmnt);
+              int rc = step(stmnt);
 
               sqlite3_prepare_v2(db, tatp_statement_sql[4], -1, &stmnt, NULL);
               sqlite3_bind_int(stmnt, 1, (int)p.data_a);
               sqlite3_bind_int64(stmnt, 2, (sqlite3_int64)p.s_id);
               sqlite3_bind_int(stmnt, 3, (int)p.sf_type);
-              int res1 = sqlite3_step(stmnt);
-              sqlite3_finalize(stmnt);
+              rc = step(stmnt);
+
+              sqlite3_exec(db, "COMMIT;", NULL,NULL,NULL);
  
-              return res1 == SQLITE_DONE && res2 == SQLITE_DONE;
+              return sqlite3_changes(db) > 0;
             },
 
             [&](const dbbench::tatp::UpdateLocation &p) {
@@ -95,8 +96,8 @@ public:
               sqlite3_prepare_v2(db, tatp_statement_sql[5], -1, &stmnt, NULL);
               sqlite3_bind_int64(stmnt, 1, (sqlite3_int64)p.vlr_location);
               sqlite3_bind_text(stmnt, 2, p.sub_nbr.c_str(), -1, SQLITE_TRANSIENT);
-              int res2 = sqlite3_step(stmnt);
-              sqlite3_finalize(stmnt);
+              int rc = step(stmnt);
+
               return true;
             },
 
@@ -105,24 +106,16 @@ public:
               sqlite3_stmt *stmnt;
               sqlite3_prepare_v2(db, tatp_statement_sql[6], -1, &stmnt, NULL);
               sqlite3_bind_text(stmnt, 1, p.sub_nbr.c_str(), -1, SQLITE_TRANSIENT);
-              int res = sqlite3_step(stmnt);
+              int rc = sqlite3_step(stmnt);
               size_t s_id;
-              if(res == SQLITE_ROW){
+              if(rc == SQLITE_ROW){
                 s_id = sqlite3_column_int64(stmnt,0);
-                res = sqlite3_step(stmnt);
-                if(res == SQLITE_DONE)
-                  sqlite3_finalize(stmnt);
-                }
+                rc = step(stmnt);
+              }
 
               sqlite3_prepare_v2(db, tatp_statement_sql[7], -1, &stmnt, NULL);
               sqlite3_bind_int64(stmnt, 1, (sqlite3_int64)s_id);
-              res = sqlite3_step(stmnt);
-              if(res == SQLITE_ROW){
-                size_t count = sqlite3_column_int64(stmnt,0);
-                res = sqlite3_step(stmnt);
-                if(res == SQLITE_DONE)
-                  sqlite3_finalize(stmnt);
-                }
+              rc = step(stmnt);
 
               sqlite3_prepare_v2(db, tatp_statement_sql[8], -1, &stmnt, NULL);
               sqlite3_bind_int64(stmnt, 1, (sqlite3_int64)s_id);
@@ -130,42 +123,38 @@ public:
               sqlite3_bind_int(stmnt, 3, (int)p.start_time);
               sqlite3_bind_int(stmnt, 4, (int)p.end_time);
               sqlite3_bind_text(stmnt, 5, p.numberx.c_str(), -1, SQLITE_TRANSIENT);
-              int rc = sqlite3_step(stmnt);
-              if(res == SQLITE_ROW){
-                size_t count = sqlite3_column_int64(stmnt,0);
-                res = sqlite3_step(stmnt);
-                if(res == SQLITE_DONE)
-                  sqlite3_finalize(stmnt);
-                }
-
+              
+              rc = step(stmnt);
+              
+              bool success = false;
               if (rc == SQLITE_CONSTRAINT) {
-                return false;
+                success =  false;
               }
-              return true;
+              sqlite3_exec(db, "COMMIT;", NULL,NULL,NULL);
+              return success;
             },
 
             [&](const dbbench::tatp::DeleteCallForwarding &p) {
+
               sqlite3_stmt *stmnt;
               sqlite3_prepare_v2(db, tatp_statement_sql[6], -1, &stmnt, NULL);
               sqlite3_bind_text(stmnt, 1, p.sub_nbr.c_str(), -1, SQLITE_TRANSIENT);
-              int res = sqlite3_step(stmnt);
+              int rc = sqlite3_step(stmnt);
               size_t s_id;
-              if(res == SQLITE_ROW){
+              if(rc == SQLITE_ROW){
                 s_id = sqlite3_column_int64(stmnt,0);
-                res = sqlite3_step(stmnt);
-                if(res == SQLITE_DONE)
-                  sqlite3_finalize(stmnt);
-                }
+                rc = step(stmnt);
+              }
 
               sqlite3_prepare_v2(db, tatp_statement_sql[9], -1, &stmnt, NULL);
               
               sqlite3_bind_int64(stmnt, 1, (sqlite3_int64)s_id);
               sqlite3_bind_int(stmnt, 2, (int)p.sf_type);
               sqlite3_bind_int(stmnt, 3, (int)p.start_time);
-              int res1 = sqlite3_step(stmnt);
-              sqlite3_finalize(stmnt);
- 
-              return res1 == SQLITE_DONE;
+              rc = step(stmnt);
+
+              sqlite3_exec(db, "COMMIT;", NULL,NULL,NULL);
+              return sqlite3_changes(db) > 0;
             },
         },
         procedure_generator_.next());
@@ -253,7 +242,8 @@ void load_db_1(sqlite3 *db, size_t db_size){
         },
         *record);
   }
-  std::cout << std::endl;
+  int stat = sqlite3_exec(db, "COMMIT;", NULL,NULL,NULL);
+  if(stat){cout << stat << endl;}
 }
 
 
@@ -357,103 +347,9 @@ int main (int argc, char** argv){
     sqlite3_exec(db,"PRAGMA journal_mode=WAL", NULL,NULL,NULL);
     workers.emplace_back(db, n_subscriber_records);
 
-    double throughput = dbbench::run(workers, result["warmup"].as<size_t>(),
-                                     result["measure"].as<size_t>());
+    double throughput = dbbench::run(workers, result["warmup"].as<size_t>(),result["measure"].as<size_t>());
     std::cout << throughput << std::endl;
     close_db(db);
   }
-  
+  return 0;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/* function which is not working properly don't know why tho
-void load_db(sqlite3 *db, size_t db_size){
-  dbbench::tatp::RecordGenerator record_generator(1);
-  int i = 0;
-  while(auto record = record_generator.next()){
-    if(i % 10000 == 0)
-      cout << i++ << " " << flush;
-    std::visit(
-        overloaded{
-            [&](const dbbench::tatp::SubscriberRecord &r) {
-              std::string insert_stmnt = "INSERT INTO subscriber VALUES (";
-              insert_stmnt += to_string(r.s_id) + ",";
-              insert_stmnt += r.sub_nbr + ",";
-
-              for (int i = 0; i < 10; ++i) {
-                insert_stmnt += std::to_string(r.bit[i]) + ",";
-              }
-              for (int i = 0; i < 10; ++i) {
-                insert_stmnt += std::to_string(r.hex[i]) + ",";
-              }
-              for (int i = 0; i < 10; ++i) {
-                insert_stmnt += std::to_string(r.byte2[i]) + ",";
-              }
-              insert_stmnt += std::to_string(r.msc_location) + ",";
-              insert_stmnt += std::to_string(r.vlr_location) + ");";
-              char* err_msg = NULL;
-              cout << insert_stmnt << endl;
-              int status = sqlite3_exec(db, sqlite_init, NULL, NULL, &err_msg);
-              if(status){printf("load failed:\t%i\t%s\n", status, err_msg);}
-            },
-
-            [&](const dbbench::tatp::AccessInfoRecord &r) {
-              std::string insert_stmnt = "INSERT INTO access_info VALUES (";
-              insert_stmnt += to_string(r.s_id) + ",";
-              insert_stmnt += to_string(r.ai_type) + ",";
-              insert_stmnt += to_string(r.data1) + ",";
-              insert_stmnt += to_string(r.data2) + ",";
-              insert_stmnt += r.data3 + ",";
-              insert_stmnt += r.data4 + ");";
-              char* err_msg = NULL;
-              cout << insert_stmnt << endl;
-              int status = sqlite3_exec(db, sqlite_init, NULL, NULL, &err_msg);
-              if(status){printf("load failed:\t%i\t%s\n", status, err_msg);}
-            },
-
-            [&](const dbbench::tatp::SpecialFacilityRecord &r) {
-              std::string insert_stmnt = "INSERT INTO special_facility VALUES (";
-              insert_stmnt += to_string(r.s_id) + ",";
-              insert_stmnt += to_string(r.sf_type) + ",";
-              insert_stmnt += to_string(r.is_active) + ",";
-              insert_stmnt += to_string(r.error_cntrl) + ",";
-              insert_stmnt += to_string(r.data_a) + ",";
-              insert_stmnt += r.data_b + ");";
-              char* err_msg = NULL;
-              cout << insert_stmnt << endl;
-              int status = sqlite3_exec(db, sqlite_init, NULL, NULL, &err_msg);
-              if(status){printf("load failed:\t%i\t%s\n", status, err_msg);}
-            },
-
-            [&](const dbbench::tatp::CallForwardingRecord &r) {
-              std::string insert_stmnt = "INSERT INTO call_forwarding VALUES (";
-              insert_stmnt += to_string(r.s_id) + ",";
-              insert_stmnt += to_string(r.sf_type) + ",";
-              insert_stmnt += to_string(r.start_time) + ",";
-              insert_stmnt += to_string(r.end_time) + ",";
-              insert_stmnt += r.numberx + ");";
-              cout << insert_stmnt << endl;
-              char* err_msg = NULL;
-              int status = sqlite3_exec(db, sqlite_init, NULL, NULL, &err_msg);
-              if(status){printf("load failed:\t%i\t%s\n", status, err_msg);}
-            },
-        },
-        *record);
-  }
-  std::cout << std::endl;
-}
-*/
