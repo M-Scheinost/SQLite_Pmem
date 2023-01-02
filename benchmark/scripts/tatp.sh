@@ -1,8 +1,8 @@
 #!/bin/bash
 
 
-for sf in 1 10000 100000 1000000; do
-  for pm in "false" "true"; do
+for sf in 10000 100000 1000000; do
+  for pm in "true" "false"; do
     printf "*** TATP (scale factor %s) ***\n" "$sf"
     path=""
     if [ "$pm" = "true" ]
@@ -20,7 +20,7 @@ for sf in 1 10000 100000 1000000; do
       #for cache_size in "-100000" "-200000" "-500000" "-1000000" "-2000000" "-5000000"; do
 
         #command="./tatp_bench --run --records=$sf --journal_mode=$journal_mode --cache_size=$cache_size --path=$path --pmem=$pm"
-        command="./tatp_bench --run --records=$sf --path=$path --pmem=$pm"
+        command="./tatp_bench --run --records=$sf --path=$path --pmem=$pm --measure=30" 
         printf "%s\n" "$command"
         for trial in {1..3}; do
           #printf "%s," "$trial"

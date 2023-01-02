@@ -34,24 +34,31 @@ int step(sqlite3_stmt *stmt){
 
 class Worker {
 public:
-  Worker(sqlite3 *db, size_t db_size)
-      : db(db), procedure_generator_(db_size) {
+  Worker(sqlite3 *db_, size_t db_size) : db(db_), procedure_generator_(db_size) {
+
+        int rc;
+        vector<string> sql = tatp_transactions();
+        for(int i = 0; i< 10; i++){
+          sqlite3_stmt *stmt;
+          rc = sqlite3_prepare_v2(db, prep_sub.c_str(), prep_sub.size(), &stmt, NULL);
+        //rc = sqlite3_prepare_v2(db, prep_cf.c_str(), prep_cf.size(), &call_forwarding, NULL);
+          if(rc){cout << "Prepare transaction_"<< i << "\t" << rc << endl;}
+          stmts_.push_back(stmt);
+        }
   }
 
   bool operator()() {
     return std::visit(
         overloaded{
             [&](const dbbench::tatp::GetSubscriberData &p) {
-              sqlite3_stmt *state_1;
-              sqlite3_prepare_v2(db, tatp_statement_sql[0], -1, &state_1, NULL);
-              sqlite3_bind_int64(state_1, 1, (sqlite3_int64)p.s_id);
-              int rc = step(state_1);
+              sqlite3_stmt *stmnt = stmts_[0];
+              sqlite3_bind_int64(stmnt, 1, (sqlite3_int64)p.s_id);
+              int rc = step(stmnt);
               return true;
             },
 
             [&](const dbbench::tatp::GetNewDestination &p) {
-              sqlite3_stmt *stmnt;
-              sqlite3_prepare_v2(db, tatp_statement_sql[1], -1, &stmnt, NULL);
+              sqlite3_stmt *stmnt = stmts_[1];
               sqlite3_bind_int64(stmnt, 1, (sqlite3_int64)p.s_id);
               sqlite3_bind_int(stmnt, 2, (int)p.sf_type);
               sqlite3_bind_int(stmnt, 3, (int)p.start_time);
@@ -63,8 +70,7 @@ public:
             },
 
             [&](const dbbench::tatp::GetAccessData &p) {
-              sqlite3_stmt *stmnt;
-              sqlite3_prepare_v2(db, tatp_statement_sql[2], -1, &stmnt, NULL);
+              sqlite3_stmt *stmnt = stmts_[2];
               sqlite3_bind_int64(stmnt, 1, (sqlite3_int64)p.s_id);
               sqlite3_bind_int(stmnt, 2, (int)p.ai_type);
 
@@ -76,13 +82,12 @@ public:
             [&](const dbbench::tatp::UpdateSubscriberData &p) {
               sqlite3_exec(db, "BEGIN DEFERRED;", NULL,NULL,NULL);
 
-              sqlite3_stmt *stmnt;
-              sqlite3_prepare_v2(db, tatp_statement_sql[3], -1, &stmnt, NULL);
+              sqlite3_stmt *stmnt = stmts_[3];
               sqlite3_bind_int(stmnt, 1, (int)p.bit_1);
               sqlite3_bind_int64(stmnt, 2, (sqlite3_int64)p.s_id);
               int rc = step(stmnt);
 
-              sqlite3_prepare_v2(db, tatp_statement_sql[4], -1, &stmnt, NULL);
+              stmnt = stmts_[4];
               sqlite3_bind_int(stmnt, 1, (int)p.data_a);
               sqlite3_bind_int64(stmnt, 2, (sqlite3_int64)p.s_id);
               sqlite3_bind_int(stmnt, 3, (int)p.sf_type);
@@ -94,8 +99,7 @@ public:
             },
 
             [&](const dbbench::tatp::UpdateLocation &p) {
-              sqlite3_stmt *stmnt;
-              sqlite3_prepare_v2(db, tatp_statement_sql[5], -1, &stmnt, NULL);
+              sqlite3_stmt *stmnt = stmts_[5];
               sqlite3_bind_int64(stmnt, 1, (sqlite3_int64)p.vlr_location);
               sqlite3_bind_text(stmnt, 2, p.sub_nbr.c_str(), -1, SQLITE_TRANSIENT);
               int rc = step(stmnt);
@@ -106,8 +110,7 @@ public:
             [&](const dbbench::tatp::InsertCallForwarding &p) {
               sqlite3_exec(db, "BEGIN DEFERRED;", NULL,NULL,NULL);
 
-              sqlite3_stmt *stmnt;
-              sqlite3_prepare_v2(db, tatp_statement_sql[6], -1, &stmnt, NULL);
+              sqlite3_stmt *stmnt = stmts_[6];;
               sqlite3_bind_text(stmnt, 1, p.sub_nbr.c_str(), -1, SQLITE_TRANSIENT);
               int rc = sqlite3_step(stmnt);
               size_t s_id;
@@ -116,11 +119,11 @@ public:
                 rc = step(stmnt);
               }
 
-              sqlite3_prepare_v2(db, tatp_statement_sql[7], -1, &stmnt, NULL);
+              stmnt = stmts_[7];
               sqlite3_bind_int64(stmnt, 1, (sqlite3_int64)s_id);
               rc = step(stmnt);
 
-              sqlite3_prepare_v2(db, tatp_statement_sql[8], -1, &stmnt, NULL);
+              stmnt = stmts_[8];
               sqlite3_bind_int64(stmnt, 1, (sqlite3_int64)s_id);
               sqlite3_bind_int(stmnt, 2, (int)p.sf_type);
               sqlite3_bind_int(stmnt, 3, (int)p.start_time);
@@ -140,8 +143,7 @@ public:
             [&](const dbbench::tatp::DeleteCallForwarding &p) {
               sqlite3_exec(db, "BEGIN DEFERRED;", NULL,NULL,NULL);
 
-              sqlite3_stmt *stmnt;
-              sqlite3_prepare_v2(db, tatp_statement_sql[6], -1, &stmnt, NULL);
+              sqlite3_stmt *stmnt = stmts_[6];
               sqlite3_bind_text(stmnt, 1, p.sub_nbr.c_str(), -1, SQLITE_TRANSIENT);
               int rc = sqlite3_step(stmnt);
               size_t s_id;
@@ -150,8 +152,7 @@ public:
                 rc = step(stmnt);
               }
 
-              sqlite3_prepare_v2(db, tatp_statement_sql[9], -1, &stmnt, NULL);
-              
+              stmnt = stmts_[9];
               sqlite3_bind_int64(stmnt, 1, (sqlite3_int64)s_id);
               sqlite3_bind_int(stmnt, 2, (int)p.sf_type);
               sqlite3_bind_int(stmnt, 3, (int)p.start_time);
@@ -167,13 +168,11 @@ public:
 private:
   sqlite3 *db;
   size_t db_size;
+  std::vector<sqlite3_stmt*> stmts_;
   dbbench::tatp::ProcedureGenerator procedure_generator_;
 };
 
-const string prep_sub = "INSERT INTO subscriber VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
-const string prep_ai = "INSERT INTO access_info VALUES (?,?,?,?,?,?)";
-const string prep_sf = "INSERT INTO special_facility VALUES (?,?,?,?,?,?)";
-const string prep_cf = "INSERT INTO call_forwarding VALUES (?,?,?,?,?)";
+
 
 void load_db_1(sqlite3 *db, size_t db_size){
 
@@ -186,6 +185,7 @@ void load_db_1(sqlite3 *db, size_t db_size){
   sqlite3_stmt *access_info;
   sqlite3_stmt *special_facility;
   sqlite3_stmt *call_forwarding;
+
   rc = sqlite3_prepare_v2(db, prep_sub.c_str(), prep_sub.size(), &subscriber, NULL);
   if(rc){cout <<"SR_prepare:\t" << rc << endl;}
   rc = sqlite3_prepare_v2(db, prep_ai.c_str(), prep_ai.size(), &access_info, NULL);
@@ -286,8 +286,17 @@ void load_db_1(sqlite3 *db, size_t db_size){
         },
         *record);
   }
-  int stat = sqlite3_exec(db, "COMMIT;", NULL,NULL,NULL);
-  if(stat){cout <<"load commit: " << stat << endl;}
+  rc = sqlite3_exec(db, "COMMIT;", NULL,NULL,NULL);
+  if(rc){cout <<"load commit: " << stat << endl;}
+
+  rc = sqlite3_finalize(call_forwarding);
+  if(rc){cout <<"CFR_step:\t" << rc << endl;}
+  rc = sqlite3_finalize(special_facility);
+  if(rc){cout <<"SF_step:\t" << rc << endl;}
+  rc = sqlite3_finalize(access_info);
+  if(rc){cout <<"ACR_step:\t" << rc << endl;}
+  rc = sqlite3_finalize(subscriber);
+  if(rc){cout <<"SR_step:\t" << rc << endl;}
 }
 
 sqlite3* open_db(const char* path, bool pmem){
@@ -306,7 +315,7 @@ sqlite3* open_db(const char* path, bool pmem){
 }
 
 void close_db(sqlite3* db){
-  int status = sqlite3_close(db);
+  int status = sqlite3_close_v2(db);
   if(status){cout <<"Close:\t" << status << endl;}
 }
 

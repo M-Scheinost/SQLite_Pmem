@@ -63,6 +63,24 @@ include(${CMAKE_SOURCE_DIR}/benchmark/local.cmake)
 include(${CMAKE_SOURCE_DIR}/sqlite/local.cmake)
 include(${CMAKE_SOURCE_DIR}/vfs/local.cmake)
 
+# target_compile_options(
+#         sqlite
+#         PRIVATE
+#         -DSQLITE_DQS=0
+#         -DSQLITE_THREADSAFE=0
+#         -DSQLITE_OMIT_LOAD_EXTENSION
+#         -DSQLITE_DEFAULT_MEMSTATUS=0
+#         -DSQLITE_DEFAULT_WAL_SYNCHRONOUS=1
+#         -DSQLITE_LIKE_DOESNT_MATCH_BLOBS
+#         -DSQLITE_MAX_EXPR_DEPTH=0
+#         -DSQLITE_OMIT_DECLTYPE
+#         -DSQLITE_OMIT_DEPRECATED
+#         -DSQLITE_OMIT_PROGRESS_CALLBACK
+#         -DSQLITE_OMIT_SHARED_CACHE
+#         -DSQLITE_USE_ALLOCA
+#         -DSQLITE_OMIT_AUTOINIT
+# )
+
 set(SRC_LIB_FILE ${PROJECT_SOURCE_DIR}/sqlite/sqlite${SQLITE_VER_MAJOR}.c)
 set(SRC_SHELL_FILE ${PROJECT_SOURCE_DIR}/sqlite/shell.c)
 set(SRC_TEST_FILE ${PROJECT_SOURCE_DIR}/main.c)

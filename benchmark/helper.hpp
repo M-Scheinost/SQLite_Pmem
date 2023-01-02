@@ -2,6 +2,8 @@
 #define SQLITE_PERFORMANCE_TATP_HELPERS_HPP
 
 #include "cxxopts.hpp"
+#include <string>
+#include <vector>
 
 const char sqlite_init[] = "PRAGMA journal_mode = WAL;"\
                     "DROP TABLE IF EXISTS call_forwarding;"\
@@ -78,9 +80,13 @@ const char sqlite_init[] = "PRAGMA journal_mode = WAL;"\
                     "        REFERENCES special_facility (s_id, sf_type)     "\
                     ");";
 
-const char* tatp_statement_sql[] = {"SELECT * "
-          "FROM subscriber "
-          "WHERE s_id = ?;",
+const std::string prep_sub = "INSERT INTO subscriber VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+const std::string prep_ai = "INSERT INTO access_info VALUES (?,?,?,?,?,?)";
+const std::string prep_sf = "INSERT INTO special_facility VALUES (?,?,?,?,?,?)";
+const std::string prep_cf = "INSERT INTO call_forwarding VALUES (?,?,?,?,?)";
+
+std::vector<std::string> tatp_transactions() {
+  return {"SELECT * FROM subscriber WHERE s_id = ?;",
 
           "SELECT cf.numberx "
           "FROM special_facility AS sf, call_forwarding AS cf "
@@ -117,8 +123,7 @@ const char* tatp_statement_sql[] = {"SELECT * "
 
           "DELETE FROM call_forwarding "
           "WHERE s_id = ? AND sf_type = ? AND start_time = ?;"};
-
-
+}
 
 cxxopts::Options tatp_options(const std::string &program,
                               const std::string &help_string = "") {
