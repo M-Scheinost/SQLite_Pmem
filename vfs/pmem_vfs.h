@@ -1,4 +1,5 @@
-#pragma once
+#ifndef PMEM_VFS_H
+#define PMEM_VFS_H
 #include "../sqlite/sqlite3.h"
 #include <libpmem.h>
 #include <libpmemlog.h>
@@ -54,3 +55,5 @@ typedef int8_t i8;
 
 /*The only function visible from the outside*/
 sqlite3_vfs *sqlite3_pmem_vfs(void);
+
+#endif // PMEM_VFS_H

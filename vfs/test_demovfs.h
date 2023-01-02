@@ -1,4 +1,5 @@
-#pragma once
+#ifndef DEMO_VFS_H
+#define DEMO_VFS_H
 #include "../sqlite/sqlite3.h"
 
 #include <assert.h>
@@ -34,3 +35,5 @@
 
 /*The only function visible from the outside*/
 sqlite3_vfs *sqlite3_demovfs(void);
+
+#endif // DEMO_VFS_H
