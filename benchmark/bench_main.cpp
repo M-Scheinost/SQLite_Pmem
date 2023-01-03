@@ -50,114 +50,162 @@ public:
     return std::visit(
         overloaded{
             [&](const dbbench::tatp::GetSubscriberData &p) {
+              int rc;
               sqlite3_stmt *stmnt = stmts_[0];
-              sqlite3_bind_int64(stmnt, 1, (sqlite3_int64)p.s_id);
-              int rc = step(stmnt);
+              rc = sqlite3_bind_int64(stmnt, 1, (sqlite3_int64)p.s_id);
+              if(rc){cout << "Transition_1 bind "<< rc << endl;}
+              rc = step(stmnt);
+              if(rc){cout << "Transition_1 step "<< rc << endl;}
               return true;
             },
 
             [&](const dbbench::tatp::GetNewDestination &p) {
+              int rc; 
               sqlite3_stmt *stmnt = stmts_[1];
-              sqlite3_bind_int64(stmnt, 1, (sqlite3_int64)p.s_id);
-              sqlite3_bind_int(stmnt, 2, (int)p.sf_type);
-              sqlite3_bind_int(stmnt, 3, (int)p.start_time);
-              sqlite3_bind_int(stmnt, 4, (int)p.end_time);
+              rc = sqlite3_bind_int64(stmnt, 1, (sqlite3_int64)p.s_id);
+              if(rc){cout << "Transition_2 bind "<< rc << endl;}
+              rc = sqlite3_bind_int(stmnt, 2, (int)p.sf_type);
+              if(rc){cout << "Transition_2 bind "<< rc << endl;}
+              rc = sqlite3_bind_int(stmnt, 3, (int)p.start_time);
+              if(rc){cout << "Transition_2 bind "<< rc << endl;}
+              rc = sqlite3_bind_int(stmnt, 4, (int)p.end_time);
+              if(rc){cout << "Transition_2 bind "<< rc << endl;}
 
               size_t count {0};
-              int rc = step(stmnt, count);
+              rc = step(stmnt, count);
+              if(rc){cout << "Transition_1 step "<< rc << endl;}
               return count > 0;
             },
 
             [&](const dbbench::tatp::GetAccessData &p) {
+              int rc;
               sqlite3_stmt *stmnt = stmts_[2];
-              sqlite3_bind_int64(stmnt, 1, (sqlite3_int64)p.s_id);
-              sqlite3_bind_int(stmnt, 2, (int)p.ai_type);
+              rc = sqlite3_bind_int64(stmnt, 1, (sqlite3_int64)p.s_id);
+              if(rc){cout << "Transition_3 bind "<< rc << endl;}
+              rc = sqlite3_bind_int(stmnt, 2, (int)p.ai_type);
+              if(rc){cout << "Transition_3 bind "<< rc << endl;}
 
               size_t count {0};
-              int rc = step(stmnt, count);
+              rc = step(stmnt, count);
+              if(rc){cout << "Transition_3 bind "<< rc << endl;}
               return count > 0;
             },
 
             [&](const dbbench::tatp::UpdateSubscriberData &p) {
-              sqlite3_exec(db, "BEGIN DEFERRED;", NULL,NULL,NULL);
+              int rc;
+              rc = sqlite3_exec(db, "BEGIN DEFERRED;", NULL,NULL,NULL);
+              if(rc){cout << "Transition_4 init "<< rc << endl;}
 
               sqlite3_stmt *stmnt = stmts_[3];
-              sqlite3_bind_int(stmnt, 1, (int)p.bit_1);
-              sqlite3_bind_int64(stmnt, 2, (sqlite3_int64)p.s_id);
-              int rc = step(stmnt);
+              rc = sqlite3_bind_int(stmnt, 1, (int)p.bit_1);
+              if(rc){cout << "Transition_4 bind "<< rc << endl;}
+              rc = sqlite3_bind_int64(stmnt, 2, (sqlite3_int64)p.s_id);
+              if(rc){cout << "Transition_4 bind "<< rc << endl;}
+              rc = step(stmnt);
+              if(rc){cout << "Transition_4 step "<< rc << endl;}
 
               stmnt = stmts_[4];
-              sqlite3_bind_int(stmnt, 1, (int)p.data_a);
-              sqlite3_bind_int64(stmnt, 2, (sqlite3_int64)p.s_id);
-              sqlite3_bind_int(stmnt, 3, (int)p.sf_type);
+              rc = sqlite3_bind_int(stmnt, 1, (int)p.data_a);
+              if(rc){cout << "Transition_4 bind 2 "<< rc << endl;}
+              rc = sqlite3_bind_int64(stmnt, 2, (sqlite3_int64)p.s_id);
+              if(rc){cout << "Transition_4 bind 2 "<< rc << endl;}
+              rc = sqlite3_bind_int(stmnt, 3, (int)p.sf_type);
+              if(rc){cout << "Transition_4 bind 2 "<< rc << endl;}
               rc = step(stmnt);
+              if(rc){cout << "Transition_4 step2 "<< rc << endl;}
 
-              sqlite3_exec(db, "COMMIT;", NULL,NULL,NULL);
+              rc = sqlite3_exec(db, "COMMIT;", NULL,NULL,NULL);
+              if(rc){cout << "Transition_4 commit "<< rc << endl;}
  
               return sqlite3_changes(db) > 0;
             },
 
             [&](const dbbench::tatp::UpdateLocation &p) {
+              int rc;
               sqlite3_stmt *stmnt = stmts_[5];
-              sqlite3_bind_int64(stmnt, 1, (sqlite3_int64)p.vlr_location);
-              sqlite3_bind_text(stmnt, 2, p.sub_nbr.c_str(), -1, SQLITE_TRANSIENT);
-              int rc = step(stmnt);
+              rc = sqlite3_bind_int64(stmnt, 1, (sqlite3_int64)p.vlr_location);
+              if(rc){cout << "Transition_5 bind "<< rc << endl;}
+              rc = sqlite3_bind_text(stmnt, 2, p.sub_nbr.c_str(), -1, SQLITE_TRANSIENT);
+              if(rc){cout << "Transition_5 bind "<< rc << endl;}
+              rc = step(stmnt);
+              if(rc){cout << "Transition_5 step "<< rc << endl;}
 
               return true;
             },
 
             [&](const dbbench::tatp::InsertCallForwarding &p) {
-              sqlite3_exec(db, "BEGIN DEFERRED;", NULL,NULL,NULL);
+              int rc;
+              rc = sqlite3_exec(db, "BEGIN DEFERRED;", NULL,NULL,NULL);
+              if(rc){cout << "Transition_6 init "<< rc << endl;}
 
               sqlite3_stmt *stmnt = stmts_[6];;
-              sqlite3_bind_text(stmnt, 1, p.sub_nbr.c_str(), -1, SQLITE_TRANSIENT);
-              int rc = sqlite3_step(stmnt);
+              rc = sqlite3_bind_text(stmnt, 1, p.sub_nbr.c_str(), -1, SQLITE_TRANSIENT);
+              if(rc){cout << "Transition_6 bind "<< rc << endl;}
+              rc = sqlite3_step(stmnt);
               size_t s_id;
               if(rc == SQLITE_ROW){
                 s_id = sqlite3_column_int64(stmnt,0);
                 rc = step(stmnt);
               }
+              if(rc){cout << "Transition_6 step "<< rc << endl;}
 
               stmnt = stmts_[7];
-              sqlite3_bind_int64(stmnt, 1, (sqlite3_int64)s_id);
+              rc = sqlite3_bind_int64(stmnt, 1, (sqlite3_int64)s_id);
+              if(rc){cout << "Transition_6 bind2 "<< rc << endl;}
               rc = step(stmnt);
+              if(rc){cout << "Transition_6 step 2 "<< rc << endl;}
 
               stmnt = stmts_[8];
-              sqlite3_bind_int64(stmnt, 1, (sqlite3_int64)s_id);
-              sqlite3_bind_int(stmnt, 2, (int)p.sf_type);
-              sqlite3_bind_int(stmnt, 3, (int)p.start_time);
-              sqlite3_bind_int(stmnt, 4, (int)p.end_time);
-              sqlite3_bind_text(stmnt, 5, p.numberx.c_str(), -1, SQLITE_TRANSIENT);
+              rc = sqlite3_bind_int64(stmnt, 1, (sqlite3_int64)s_id);
+              if(rc){cout << "Transition_6 bind3 "<< rc << endl;}
+              rc = sqlite3_bind_int(stmnt, 2, (int)p.sf_type);
+              if(rc){cout << "Transition_6 bind3 "<< rc << endl;}
+              rc = sqlite3_bind_int(stmnt, 3, (int)p.start_time);
+              if(rc){cout << "Transition_6 bind3 "<< rc << endl;}
+              rc = sqlite3_bind_int(stmnt, 4, (int)p.end_time);
+              if(rc){cout << "Transition_6 bind3 "<< rc << endl;}
+              rc = sqlite3_bind_text(stmnt, 5, p.numberx.c_str(), -1, SQLITE_TRANSIENT);
+              if(rc){cout << "Transition_6 bind3 "<< rc << endl;}
               
               rc = step(stmnt);
-              
               bool success = false;
-              if (rc == SQLITE_CONSTRAINT) {
+              if (rc) {
+                if(rc != SQLITE_CONSTRAINT){cout << "Transition_6 step3 "<< rc << endl;}
                 success =  false;
               }
-              sqlite3_exec(db, "COMMIT;", NULL,NULL,NULL);
+              rc = sqlite3_exec(db, "COMMIT;", NULL,NULL,NULL);
+              if(rc){cout << "Transition_6 commit "<< rc << endl;}
               return success;
             },
 
             [&](const dbbench::tatp::DeleteCallForwarding &p) {
-              sqlite3_exec(db, "BEGIN DEFERRED;", NULL,NULL,NULL);
+              int rc;
+              rc = sqlite3_exec(db, "BEGIN DEFERRED;", NULL,NULL,NULL);
+              if(rc){cout << "Transition_7 init "<< rc << endl;}
 
               sqlite3_stmt *stmnt = stmts_[6];
-              sqlite3_bind_text(stmnt, 1, p.sub_nbr.c_str(), -1, SQLITE_TRANSIENT);
-              int rc = sqlite3_step(stmnt);
+              rc = sqlite3_bind_text(stmnt, 1, p.sub_nbr.c_str(), -1, SQLITE_TRANSIENT);
+              if(rc){cout << "Transition_7 bind "<< rc << endl;}
+              rc = sqlite3_step(stmnt);
               size_t s_id;
               if(rc == SQLITE_ROW){
                 s_id = sqlite3_column_int64(stmnt,0);
                 rc = step(stmnt);
               }
+              if(rc){cout << "Transition_7 step "<< rc << endl;}
 
               stmnt = stmts_[9];
-              sqlite3_bind_int64(stmnt, 1, (sqlite3_int64)s_id);
-              sqlite3_bind_int(stmnt, 2, (int)p.sf_type);
-              sqlite3_bind_int(stmnt, 3, (int)p.start_time);
+              rc = sqlite3_bind_int64(stmnt, 1, (sqlite3_int64)s_id);
+              if(rc){cout << "Transition_7 bind2 "<< rc << endl;}
+              rc = sqlite3_bind_int(stmnt, 2, (int)p.sf_type);
+              if(rc){cout << "Transition_7 bind2 "<< rc << endl;}
+              rc = sqlite3_bind_int(stmnt, 3, (int)p.start_time);
+              if(rc){cout << "Transition_7 bind2 "<< rc << endl;}
               rc = step(stmnt);
+              if(rc){cout << "Transition_7 step "<< rc << endl;}
 
-              sqlite3_exec(db, "COMMIT;", NULL,NULL,NULL);
+              rc = sqlite3_exec(db, "COMMIT;", NULL,NULL,NULL);
+              if(rc){cout << "Transition_7 commit "<< rc << endl;}
               return sqlite3_changes(db) > 0;
             },
         },

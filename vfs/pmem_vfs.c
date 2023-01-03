@@ -835,40 +835,37 @@ static int pmem_open(
 
   p->is_wal = flags & SQLITE_OPEN_WAL;
   
-  //if(p->is_wal){
-  //  p->path = "/mnt/pmem0/scheinost/database.db-wal";
-  //}
 
-  if(PMEMLOG_ACTIVATED){
-    p->is_wal = 1;
+  if (access(p->path, F_OK) == 0) {
+    struct stat st;
+    stat(p->path, &st);
+    p->used_size = st.st_size;
+    // file exists
+  }else {
+    //file does not exist
     
-    p->log_pool = pmemlog_create(file_path, PMEM_LEN, 0666);
-    if(p->log_pool == NULL)
-      p->log_pool = pmemlog_open(file_path);
-    
-    if(p->log_pool == NULL){
-      // printf("Error wile opening pmemlog\n");
-      return SQLITE_ERROR;
-    }
   }
-  else{
-    /* ignoring existing files here */
-    FILE *f = fopen(p->path, "w");
-    if(f == NULL){
-      return SQLITE_ERROR;
-    }
-    fclose(f);
+
+  FILE *f = fopen(p->path, "r");
+  if(f == NULL){
+    // file does not exits init empty file
     p->used_size = 0;
     // 666 = rw-rw-rw
     if ((p->pmem_file = (char *)pmem_map_file(p->path, PMEM_LEN, PMEM_FILE_CREATE,
-        0666, &p->pmem_size, &p->is_pmem)) == NULL) {
-      return SQLITE_NOMEM;
+      0666, &p->pmem_size, &p->is_pmem)) == NULL) {
+    return SQLITE_NOMEM;
     }
   }
-
-  //if( pOutFlags ){
-  //  *pOutFlags = flags;
-  //}
+  else{
+    struct stat st;
+    stat(p->path, &st);
+    p->used_size = st.st_size;
+    if ((p->pmem_file = (char *)pmem_map_file(p->path, p->used_size, PMEM_FILE_CREATE,
+      0666, &p->pmem_size, &p->is_pmem)) == NULL) {
+    return SQLITE_NOMEM;
+    }
+  }
+  fclose(f);
 
   p->shm_file = 0;
   p->shm_is_pmem = 0;
