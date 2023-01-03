@@ -847,6 +847,7 @@ static int pmem_open(
   }
 
   FILE *f = fopen(p->path, "r");
+  printf("try open file\n");
   if(f == NULL){
     // file does not exits init empty file
     p->used_size = 0;

@@ -392,7 +392,7 @@ int main (int argc, char** argv){
 
   if (result.count("load")) {
     sqlite3 *db = open_db(path.c_str(), pmem);
-    load_db_1(db, n_subscriber_records);
+    //load_db_1(db, n_subscriber_records);
     close_db(db);
   }
 
@@ -405,8 +405,8 @@ int main (int argc, char** argv){
 
     workers.emplace_back(db, n_subscriber_records);
 
-    double throughput = dbbench::run(workers, result["warmup"].as<size_t>(),result["measure"].as<size_t>());
-    std::cout << throughput << std::endl;
+    // double throughput = dbbench::run(workers, result["warmup"].as<size_t>(),result["measure"].as<size_t>());
+    // std::cout << throughput << std::endl;
     close_db(db);
   }
   return 0;
