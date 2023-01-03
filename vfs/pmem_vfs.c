@@ -344,7 +344,7 @@ struct Persistent_File {
   size_t used_size;     /* the size which got used */
   size_t pmem_size;      /*The size of pmem-memory that was actually mapped, the pmem_file size*/
   char* pmem_file;        /*The entire pmem fiel represented as char array*/
-  char** shm_file;     /* the wal-index file*/
+  char* shm_file;     /* the wal-index file*/
   size_t shm_size;    /* size of the wal-index file*/
   size_t shm_used_size;    /* used mem of wal-index */
   int shm_is_pmem;
@@ -364,6 +364,10 @@ int map_pmem(Persistent_File* p, size_t size){
 
   if(p->pmem_size == size){
     return SQLITE_OK;
+  }
+
+  if(p->pmem_file){
+    pmem_unmap(p->pmem_file, p->pmem_size);
   }
 
   if ((p->pmem_file = (char *)pmem_map_file(p->path, size, PMEM_FILE_CREATE, 0666, &p->pmem_size, &p->is_pmem)) == NULL) {
@@ -406,7 +410,7 @@ static int pmem_read(
   Persistent_File *p = (Persistent_File*)pFile;
 
   if(offset + buffer_size < p->used_size){
-    memcpy(buffer,p->pmem_file+ offset, buffer_size);
+    memcpy(buffer,&p->pmem_file[offset], buffer_size);
   }
   else{
     return SQLITE_IOERR_SHORT_READ;
@@ -528,10 +532,7 @@ static int pmem_device_characteristics(sqlite3_file *pFile){
 /**
  * opens the shm file
 */
-static int pmem_open_shm(Persistent_File *p){
-
-  // TODO check for existing file
-
+static int pmem_open_shm(Persistent_File *p, size_t size){
   /* no tmp files allowd */
   if(p->path == 0 ){
     return SQLITE_IOERR;
@@ -547,41 +548,26 @@ static int pmem_open_shm(Persistent_File *p){
   shm_path[path_length + 1] = 's';
   shm_path[path_length] = '-';
 
-  // // printf("shm-path:\t%s\n", shm_path);
-  
-  /* ignoring existing files here */
-  FILE *f = fopen(shm_path, "w");
-  if(f == NULL){
-    return SQLITE_ERROR;
+  if(p->shm_file == NULL){
+
   }
-  fclose(f);
+  struct stat st;
+  int rc = stat(shm_path, &st);
+  if(rc){
+    FILE *f = fopen(shm_path, "w");
+    if(f == NULL){
+      return SQLITE_IOERR;
+    }
+    fclose(f);
+    size = SHM_BASE_SIZE;
+  }
+  else{
+    size = st.st_size;
+  }
+
   // 666 = rw-rw-rw
-  if ((p->shm_file = (char **)pmem_map_file(shm_path, SHM_BASE_SIZE, PMEM_FILE_CREATE,
-      0666, &p->shm_size, &p->shm_is_pmem)) == NULL) {
+  if ((p->shm_file = (char *)pmem_map_file(shm_path, size, PMEM_FILE_CREATE,0666, &p->shm_size, &p->shm_is_pmem)) == NULL) {
     return SQLITE_NOMEM;
-  
-  }
-
-  // // printf("shm-open finished\n");
-  return SQLITE_OK;
-}
-
-static int pmem_extend_shm(Persistent_File *p){
-
-  int path_length = strlen(p->path);
-  char shm_path[path_length + 4];
-  memcpy(shm_path, p->path, path_length);
-  shm_path[path_length + 4] = '\0';
-  shm_path[path_length + 3] = 'm';
-  shm_path[path_length + 2] = 'h';
-  shm_path[path_length + 1] = 's';
-  shm_path[path_length] = '-';
-
-
-  if ((p->shm_file = (char **)pmem_map_file(shm_path, p->shm_size, PMEM_FILE_CREATE,
-      0666, &p->shm_size, &p->shm_is_pmem)) == NULL) {
-    return SQLITE_NOMEM;
-  
   }
   return SQLITE_OK;
 }
@@ -621,7 +607,7 @@ static int pmem_map_shm(
   */
   if(p->shm_file == 0){
     if(extend){
-      pmem_open_shm(p);
+      pmem_open_shm(p,0);
     }
     else{
       *pp = 0;
@@ -629,19 +615,14 @@ static int pmem_map_shm(
     } 
   }
 
-try_map_shm:
-  if(region_size * region_number < p->shm_size){
-    *pp = (volatile void**)p->shm_file + (region_number*region_size);
+  while(p->shm_size < region_size * region_number){
+    pmem_open_shm(p, p->shm_size * GROW_FACTOR_FILE);
   }
-  else{
-    pmem_extend_shm(p);
-    goto try_map_shm;
-  }
+  *pp = (volatile void**)p->shm_file + (region_number*region_size);
 
-  // if(offset + buffer_size > p->used_size){
-  //   p->used_size = offset + buffer_size;
-  // }
-
+  //if(p->shm < region_size * region_number){
+  //  p->used_size = offset + buffer_size;
+  //}
   return SQLITE_OK;
 }
 
@@ -689,7 +670,6 @@ static int pmem_shm_unmap(
   sqlite3_file *pFile,               /* The underlying database file */
   int deleteFlag                  /* Delete shared-memory if true */
 ){
-  // printf("shm-unmap\n");
   Persistent_File *p = (Persistent_File*)pFile;
   pmem_unmap(p->shm_file, p->shm_size);
   if(deleteFlag){
@@ -697,7 +677,6 @@ static int pmem_shm_unmap(
     p->shm_used_size = 0;
     p->shm_file = 0;
   }
-
   return SQLITE_OK; 
 }
 
@@ -714,7 +693,7 @@ static int pmem_shm_unmap(
 ** release the reference by calling unixUnfetch().
 */
 static int pmem_fetch(sqlite3_file *fd, sqlite3_int64 offset, int amount, void **pp){
-
+  return SQLITE_OK;
   printf("Fetch used\n");
    Persistent_File *p = (Persistent_File* )fd;
   
@@ -742,6 +721,7 @@ static int pmem_fetch(sqlite3_file *fd, sqlite3_int64 offset, int amount, void *
 ** may now be invalid and should be unmapped.
 */
 static int pmem_unfetch(sqlite3_file *fd, sqlite3_int64 offset, void *p){
+  return SQLITE_OK;
   printf("Unfetch used\n");
   Persistent_File* pf = (Persistent_File*) fd;
   if(p){
@@ -909,33 +889,133 @@ static int unixAccess(
 }
 
 /*
-** Argument zPath points to a nul-terminated string containing a file path.
-** If zPath is an absolute path, then it is copied as is into the output 
-** buffer. Otherwise, if it is a relative path, then the equivalent full
-** path is written to the output buffer.
-**
-** This function assumes that paths are UNIX style. Specifically, that:
-**
-**   1. Path components are separated by a '/'. and 
-**   2. Full paths begin with a '/' character.
+** A pathname under construction
 */
-static int demoFullPathname(
-  sqlite3_vfs *pVfs,              /* VFS */
-  const char *zPath,              /* Input path (possibly a relative path) */
-  int nPathOut,                   /* Size of output buffer in bytes */
-  char *zPathOut                  /* Pointer to output buffer */
+typedef struct DbPath DbPath;
+struct DbPath {
+  int rc;           /* Non-zero following any error */
+  int nSymlink;     /* Number of symlinks resolved */
+  char *zOut;       /* Write the pathname here */
+  int nOut;         /* Bytes of space available to zOut[] */
+  int nUsed;        /* Bytes of zOut[] currently being used */
+};
+
+/* Forward reference */
+static void appendAllPathElements(DbPath*,const char*);
+
+/*
+** Append a single path element to the DbPath under construction
+*/
+static void appendOnePathElement(
+  DbPath *pPath,       /* Path under construction, to which to append zName */
+  const char *zName,   /* Name to append to pPath.  Not zero-terminated */
+  int nName            /* Number of significant bytes in zName */
 ){
-  char zDir[MAXPATHNAME+1];
-  if( zPath[0]=='/' ){
-    zDir[0] = '\0';
-  }else{
-    if( getcwd(zDir, sizeof(zDir))==0 ) return SQLITE_IOERR;
+  assert( nName>0 );
+  assert( zName!=0 );
+  if( zName[0]=='.' ){
+    if( nName==1 ) return;
+    if( zName[1]=='.' && nName==2 ){
+      if( pPath->nUsed<=1 ){
+        pPath->rc = SQLITE_ERROR;
+        return;
+      }
+      assert( pPath->zOut[0]=='/' );
+      while( pPath->zOut[--pPath->nUsed]!='/' ){}
+      return;
+    }
   }
-  zDir[MAXPATHNAME] = '\0';
+  if( pPath->nUsed + nName + 2 >= pPath->nOut ){
+    pPath->rc = SQLITE_ERROR;
+    return;
+  }
+  pPath->zOut[pPath->nUsed++] = '/';
+  memcpy(&pPath->zOut[pPath->nUsed], zName, nName);
+  pPath->nUsed += nName;
+#if defined(HAVE_READLINK) && defined(HAVE_LSTAT)
+  if( pPath->rc==SQLITE_OK ){
+    const char *zIn;
+    struct stat buf;
+    pPath->zOut[pPath->nUsed] = 0;
+    zIn = pPath->zOut;
+    if( osLstat(zIn, &buf)!=0 ){
+      if( errno!=ENOENT ){
+        pPath->rc = unixLogError(SQLITE_CANTOPEN_BKPT, "lstat", zIn);
+      }
+    }else if( S_ISLNK(buf.st_mode) ){
+      ssize_t got;
+      char zLnk[SQLITE_MAX_PATHLEN+2];
+      if( pPath->nSymlink++ > SQLITE_MAX_SYMLINK ){
+        pPath->rc = SQLITE_CANTOPEN_BKPT;
+        return;
+      }
+      got = osReadlink(zIn, zLnk, sizeof(zLnk)-2);
+      if( got<=0 || got>=(ssize_t)sizeof(zLnk)-2 ){
+        pPath->rc = unixLogError(SQLITE_CANTOPEN_BKPT, "readlink", zIn);
+        return;
+      }
+      zLnk[got] = 0;
+      if( zLnk[0]=='/' ){
+        pPath->nUsed = 0;
+      }else{
+        pPath->nUsed -= nName + 1;
+      }
+      appendAllPathElements(pPath, zLnk);
+    }
+  }
+#endif
+}
 
-  sqlite3_snprintf(nPathOut, zPathOut, "%s/%s", zDir, zPath);
-  zPathOut[nPathOut-1] = '\0';
+/*
+** Append all path elements in zPath to the DbPath under construction.
+*/
+static void appendAllPathElements(
+  DbPath *pPath,       /* Path under construction, to which to append zName */
+  const char *zPath    /* Path to append to pPath.  Is zero-terminated */
+){
+  int i = 0;
+  int j = 0;
+  do{
+    while( zPath[i] && zPath[i]!='/' ){ i++; }
+    if( i>j ){
+      appendOnePathElement(pPath, &zPath[j], i-j);
+    }
+    j = i+1;
+  }while( zPath[i++] );
+}
 
+/*
+** Turn a relative pathname into a full pathname. The relative path
+** is stored as a nul-terminated string in the buffer pointed to by
+** zPath. 
+**
+** zOut points to a buffer of at least sqlite3_vfs.mxPathname bytes 
+** (in this case, MAX_PATHNAME bytes). The full-path is written to
+** this buffer before returning.
+*/
+static int unixFullPathname(
+  sqlite3_vfs *pVfs,            /* Pointer to vfs object */
+  const char *zPath,            /* Possibly relative input path */
+  int nOut,                     /* Size of output buffer in bytes */
+  char *zOut                    /* Output buffer */
+){
+  DbPath path;
+  path.rc = 0;
+  path.nUsed = 0;
+  path.nSymlink = 0;
+  path.nOut = nOut;
+  path.zOut = zOut;
+  if( zPath[0]!='/' ){
+    char zPwd[512+2];
+    if( osGetcwd(zPwd, sizeof(zPwd)-2)==0 ){
+      return SQLITE_ERROR;
+    }
+    appendAllPathElements(&path, zPwd);
+  }
+  appendAllPathElements(&path, zPath);
+  zOut[path.nUsed] = 0;
+  if( path.rc || path.nUsed<2 ) return SQLITE_ERROR;
+  if( path.nSymlink ) return SQLITE_OK_SYMLINK;
   return SQLITE_OK;
 }
 
@@ -1143,7 +1223,7 @@ sqlite3_vfs *sqlite3_pmem_vfs(void){
     pmem_open,                     /* xOpen */
     demoDelete,                   /* xDelete */
     unixAccess,                   /* xAccess */
-    demoFullPathname,             /* xFullPathname */
+    unixFullPathname,             /* xFullPathname */
     demoDlOpen,                   /* xDlOpen */
     demoDlError,                  /* xDlError */
     demoDlSym,                    /* xDlSym */

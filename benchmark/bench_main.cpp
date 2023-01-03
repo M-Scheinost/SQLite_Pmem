@@ -374,7 +374,7 @@ int main (int argc, char** argv){
   cxxopts::OptionAdder adder = options.add_options("SQLite3");
   adder("journal_mode", "Journal mode", cxxopts::value<std::string>()->default_value("DELETE"));
   adder("cache_size", "Cache size", cxxopts::value<std::string>()->default_value("-1000000"));
-  adder("path", "Path", cxxopts::value<std::string>()->default_value("tatp_bench.db"));
+  adder("path", "Path", cxxopts::value<std::string>()->default_value("/mnt/pmem0/scheinost/benchmark.db"));
   adder("pmem", "Pmem", cxxopts::value<bool>()->default_value("true"));
 
   cxxopts::ParseResult result = options.parse(argc, argv);
