@@ -118,6 +118,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <sys/mman.h>
+#include <sys/stat.h>
 
 /*
 ** Different Unix systems declare open() in different ways.  Same use
@@ -343,19 +344,41 @@ struct Persistent_File {
   size_t used_size;     /* the size which got used */
   size_t pmem_size;      /*The size of pmem-memory that was actually mapped, the pmem_file size*/
   char* pmem_file;        /*The entire pmem fiel represented as char array*/
-  PMEMlogpool *log_pool;    /* The pool for log-pmem */
   char** shm_file;     /* the wal-index file*/
   size_t shm_size;    /* size of the wal-index file*/
   size_t shm_used_size;    /* used mem of wal-index */
   int shm_is_pmem;
+  int times_mapped; /* the number of times pmem_fetch was called*/
 };
 
 
-/*
-** Constants used for locking
-*/
-#define UNIX_SHM_BASE   ((22+SQLITE_SHM_NLOCK)*4)         /* first lock byte */
-#define UNIX_SHM_DMS    (UNIX_SHM_BASE+SQLITE_SHM_NLOCK)  /* deadman switch */
+int map_pmem(Persistent_File* p, size_t size){
+  if(size == 0 ){
+    struct stat st;
+    int rc = stat(p->path, &st);
+    if(rc){
+      return SQLITE_IOERR;
+    }
+    size = st.st_size;
+  }
+
+  if(p->pmem_size == size){
+    return SQLITE_OK;
+  }
+
+  if ((p->pmem_file = (char *)pmem_map_file(p->path, size, PMEM_FILE_CREATE, 0666, &p->pmem_size, &p->is_pmem)) == NULL) {
+    return SQLITE_NOMEM;
+  }
+  return SQLITE_OK;
+}
+
+void unmap_pmem(Persistent_File* p){
+  pmem_unmap(p->pmem_file, p->pmem_size);
+  p->pmem_size = 0;
+  p->used_size = 0;
+  p->pmem_file = 0;
+}
+
 
 /*
  * writes the buffer to pmem
@@ -366,12 +389,7 @@ static int pmem_close(sqlite3_file *pFile){
   // // printf("close\n");
   Persistent_File *p = (Persistent_File*)pFile;
   
-  if(PMEMLOG_ACTIVATED){
-    pmemlog_close(p->log_pool);
-  }
-  else{
-    pmem_unmap(p->pmem_file, p->pmem_size);
-  }
+  pmem_unmap(p->pmem_file, p->pmem_size);
   return SQLITE_OK;
 }
 
@@ -387,7 +405,7 @@ static int pmem_read(
   // // printf("read\n");
   Persistent_File *p = (Persistent_File*)pFile;
 
-  if(offset + buffer_size < p->pmem_size){
+  if(offset + buffer_size < p->used_size){
     memcpy(buffer,p->pmem_file+ offset, buffer_size);
   }
   else{
@@ -407,47 +425,22 @@ static int pmem_write (
   int buffer_size, 
   sqlite_int64 offset
 ){
-  // // printf("write\n");
   Persistent_File *p = (Persistent_File*)pFile;
   
   assert ( pFile );
   assert( buffer_size > 0);
 
-  if(PMEMLOG_ACTIVATED){
-    if (pmemlog_append (p->log_pool, buffer, buffer_size) < 0) {
-        // // printf("pmemlog_append: error occured\n");
-        return -1;
-    }
+  while(p->pmem_size < offset + buffer_size){
+    map_pmem(p, p->pmem_size * GROW_FACTOR_FILE);
   }
-  else{
-    try_write:
-    if(offset + buffer_size <= p->pmem_size){
-      if(p->is_pmem){
-        /* automatically flushes data to pmem no extra call needed*/
-        //pmem_memcpy(p->pmem_file + offset, buffer, buffer_size, PMEM_F_MEM_NONTEMPORAL);
-        memcpy(&p->pmem_file + offset, buffer, buffer_size);
-      }
-      else{
-        /* doesn't sync changes and therefor must be synced */
-        memcpy(&p->pmem_file[offset], buffer, buffer_size);
-        //pmem_msync(p->pmem_file, p->pmem_size);
-      }
-    }
-    else{
-      if ((p->pmem_file = (char *)pmem_map_file(p->path, p->pmem_size*GROW_FACTOR_FILE, PMEM_FILE_CREATE,
-          0666, &p->pmem_size, &p->is_pmem)) == NULL) {
-        return SQLITE_NOMEM;
-      }
-      goto try_write;
-    }
-  }
+      /* automatically flushes data to pmem no extra call needed*/
+      //pmem_memcpy(p->pmem_file + offset, buffer, buffer_size, PMEM_F_MEM_NONTEMPORAL);
+  
+  memcpy(&p->pmem_file[offset], buffer, buffer_size);
 
   if(offset + buffer_size > p->used_size){
     p->used_size = offset + buffer_size;
   }
-
-
-
   return SQLITE_OK; 
 }
 
@@ -469,10 +462,6 @@ static int pmem_truncate(sqlite3_file *pFile, sqlite_int64 size){
 static int pmem_sync(sqlite3_file *pFile, int flags){
   // // printf("pmem sync\n");
   Persistent_File *p = (Persistent_File*)pFile;
-  /* wal file is always written back after a write, no need to sync*/
-  if(PMEMLOG_ACTIVATED){
-    return SQLITE_OK;
-  }
 
   if(p->is_pmem){
     pmem_persist(p->pmem_file, p->pmem_size);
@@ -702,13 +691,13 @@ static int pmem_shm_unmap(
 ){
   // printf("shm-unmap\n");
   Persistent_File *p = (Persistent_File*)pFile;
-  
-  if(PMEMLOG_ACTIVATED){
-    pmemlog_close(p->log_pool);
+  pmem_unmap(p->shm_file, p->shm_size);
+  if(deleteFlag){
+    p->shm_size = 0;
+    p->shm_used_size = 0;
+    p->shm_file = 0;
   }
-  else{
-    pmem_unmap(p->pmem_file, p->pmem_size);
-  }
+
   return SQLITE_OK; 
 }
 
@@ -724,24 +713,21 @@ static int pmem_shm_unmap(
 ** If this function does return a pointer, the caller must eventually 
 ** release the reference by calling unixUnfetch().
 */
-static int unixFetch(sqlite3_file *fd, sqlite3_int64 iOff, int nAmt, void **pp){
-  #if SQLITE_MAX_MMAP_SIZE>0
-  unixFile *pFd = (unixFile *)fd;   /* The underlying database file */
-#endif
-  *pp = 0;
+static int pmem_fetch(sqlite3_file *fd, sqlite3_int64 offset, int amount, void **pp){
 
-#if SQLITE_MAX_MMAP_SIZE>0
-  if( pFd->mmapSizeMax>0 ){
-    if( pFd->pMapRegion==0 ){
-      int rc = unixMapfile(pFd, -1);
-      if( rc!=SQLITE_OK ) return rc;
-    }
-    if( pFd->mmapSize >= iOff+nAmt ){
-      *pp = &((u8 *)pFd->pMapRegion)[iOff];
-      pFd->nFetchOut++;
-    }
+  printf("Fetch used\n");
+   Persistent_File *p = (Persistent_File* )fd;
+  
+  *pp = 0;
+  if (p->pmem_size > 0) {
+      if (p->pmem_file == 0) {
+          map_pmem(p, 0);
+      }
+      if (offset + amount <= p->pmem_size) {
+          *pp = (char *) p->pmem_file + offset;
+          p->times_mapped++;
+      }
   }
-#endif
   return SQLITE_OK;
 }
 
@@ -755,28 +741,20 @@ static int unixFetch(sqlite3_file *fd, sqlite3_int64 iOff, int nAmt, void **pp){
 ** to inform the VFS layer that, according to POSIX, any existing mapping 
 ** may now be invalid and should be unmapped.
 */
-static int unixUnfetch(sqlite3_file *fd, sqlite3_int64 iOff, void *p){
-#if SQLITE_MAX_MMAP_SIZE>0
-  unixFile *pFd = (unixFile *)fd;   /* The underlying database file */
-
-  /* If p==0 (unmap the entire file) then there must be no outstanding 
-  ** xFetch references. Or, if p!=0 (meaning it is an xFetch reference),
-  ** then there must be at least one outstanding.  */
-  assert( (p==0)==(pFd->nFetchOut==0) );
-
-  /* If p!=0, it must match the iOff value. */
-  assert( p==0 || p==&((u8 *)pFd->pMapRegion)[iOff] );
-
-  if( p ){
-    pFd->nFetchOut--;
-  }else{
-    unixUnmapfile(pFd);
+static int pmem_unfetch(sqlite3_file *fd, sqlite3_int64 offset, void *p){
+  printf("Unfetch used\n");
+  Persistent_File* pf = (Persistent_File*) fd;
+  if(p){
+    pf->times_mapped--;
   }
+  else{
+    pmem_unmap(pf->pmem_file, pf->pmem_size);
+    pf->pmem_size = 0;
+    pf->pmem_file = 0;
+    pf->used_size = 0;
+  }
+  
 
-  assert( pFd->nFetchOut>=0 );
-#else
-
-#endif
   return SQLITE_OK;
 }
 
@@ -812,8 +790,8 @@ static int pmem_open(
     unixShmLock,                /* xShmLock */
     pmem_shm_barrier,             /* xShmBarrier */
     pmem_shm_unmap,               /* xShmUnmap */
-    unixFetch,                  /* xFetch */
-    unixUnfetch,                /* xUnfetch */
+    pmem_fetch,                  /* xFetch */
+    pmem_unfetch,                /* xUnfetch */
   };
 
   Persistent_File *p = (Persistent_File*)pFile; /* Populate this structure */
@@ -835,38 +813,21 @@ static int pmem_open(
 
   p->is_wal = flags & SQLITE_OPEN_WAL;
   
-
-  if (access(p->path, F_OK) == 0) {
-    struct stat st;
-    stat(p->path, &st);
+  struct stat st;
+  int rc = stat(p->path, &st);
+  if(rc == 0){
     p->used_size = st.st_size;
-    // file exists
-  }else {
-    //file does not exist
-    
-  }
-
-  FILE *f = fopen(p->path, "r");
-  printf("try open file\n");
-  if(f == NULL){
-    // file does not exits init empty file
-    p->used_size = 0;
-    // 666 = rw-rw-rw
-    if ((p->pmem_file = (char *)pmem_map_file(p->path, PMEM_LEN, PMEM_FILE_CREATE,
-      0666, &p->pmem_size, &p->is_pmem)) == NULL) {
-    return SQLITE_NOMEM;
-    }
+    rc = map_pmem(p, p->used_size);
   }
   else{
-    struct stat st;
-    stat(p->path, &st);
-    p->used_size = st.st_size;
-    if ((p->pmem_file = (char *)pmem_map_file(p->path, p->used_size, PMEM_FILE_CREATE,
-      0666, &p->pmem_size, &p->is_pmem)) == NULL) {
-    return SQLITE_NOMEM;
+    p->used_size = 0;
+    FILE *f = fopen(p->path, "w");
+    if(f == NULL){
+      return SQLITE_IOERR;
     }
+    fclose(f);
+    rc = map_pmem(p, PMEM_LEN);
   }
-  fclose(f);
 
   p->shm_file = 0;
   p->shm_is_pmem = 0;
@@ -874,7 +835,7 @@ static int pmem_open(
   p->shm_used_size = 0;
 
   // // printf("open finished\n");
-  return SQLITE_OK;
+  return rc;
 }
 
 

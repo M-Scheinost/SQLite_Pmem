@@ -202,7 +202,7 @@ public:
               rc = sqlite3_bind_int(stmnt, 3, (int)p.start_time);
               if(rc){cout << "Transition_7 bind2 "<< rc << endl;}
               rc = step(stmnt);
-              if(rc){cout << "Transition_7 step "<< rc << endl;}
+              if(rc){cout << "Transition_7 step2 "<< rc << endl;}
 
               rc = sqlite3_exec(db, "COMMIT;", NULL,NULL,NULL);
               if(rc){cout << "Transition_7 commit "<< rc << endl;}
@@ -375,7 +375,7 @@ int main (int argc, char** argv){
   adder("journal_mode", "Journal mode", cxxopts::value<std::string>()->default_value("DELETE"));
   adder("cache_size", "Cache size", cxxopts::value<std::string>()->default_value("-1000000"));
   adder("path", "Path", cxxopts::value<std::string>()->default_value("tatp_bench.db"));
-  adder("pmem", "Pmem", cxxopts::value<bool>()->default_value("false"));
+  adder("pmem", "Pmem", cxxopts::value<bool>()->default_value("true"));
 
   cxxopts::ParseResult result = options.parse(argc, argv);
 
@@ -390,11 +390,11 @@ int main (int argc, char** argv){
   string path = result["path"].as<std::string>();
   bool pmem = result["pmem"].as<bool>();
 
-  if (result.count("load")) {
+  //if (result.count("load")) {
     sqlite3 *db = open_db(path.c_str(), pmem);
-    //load_db_1(db, n_subscriber_records);
+    load_db_1(db, n_subscriber_records);
     close_db(db);
-  }
+  //}
 
   if (result.count("run")) {
     int rc;
@@ -405,8 +405,8 @@ int main (int argc, char** argv){
 
     workers.emplace_back(db, n_subscriber_records);
 
-    // double throughput = dbbench::run(workers, result["warmup"].as<size_t>(),result["measure"].as<size_t>());
-    // std::cout << throughput << std::endl;
+    double throughput = dbbench::run(workers, result["warmup"].as<size_t>(),result["measure"].as<size_t>());
+    std::cout << throughput << std::endl;
     close_db(db);
   }
   return 0;

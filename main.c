@@ -45,7 +45,7 @@ void test_pmem(){
   char* err_msg = NULL;
 
   int status = sqlite3_open("pmem.db", &sqlite);
-  printf("STATUS:\t%i\n", status);
+  printf("OPEN-STATUS:\t%i\n", status);
   /* Default cache size is a combined 4 MB */
   
     
