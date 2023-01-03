@@ -40,8 +40,7 @@ public:
         vector<string> sql = tatp_transactions();
         for(int i = 0; i< 10; i++){
           sqlite3_stmt *stmt;
-          rc = sqlite3_prepare_v2(db, prep_sub.c_str(), prep_sub.size(), &stmt, NULL);
-        //rc = sqlite3_prepare_v2(db, prep_cf.c_str(), prep_cf.size(), &call_forwarding, NULL);
+          rc = sqlite3_prepare_v2(db, sql[i].c_str(), -1, &stmt, NULL);
           if(rc){cout << "Prepare transaction_"<< i << "\t" << rc << endl;}
           stmts_.push_back(stmt);
         }
@@ -350,9 +349,12 @@ int main (int argc, char** argv){
   }
 
   if (result.count("run")) {
+    int rc;
     std::vector<Worker> workers;
     sqlite3 *db = open_db(path.c_str(), pmem);
-    sqlite3_exec(db,"PRAGMA journal_mode=WAL", NULL,NULL,NULL);
+    rc = sqlite3_exec(db,"PRAGMA journal_mode=WAL", NULL,NULL,NULL);
+    if(rc){cout << "Pragma WAL not working: " << rc << endl;}
+
     workers.emplace_back(db, n_subscriber_records);
 
     double throughput = dbbench::run(workers, result["warmup"].as<size_t>(),result["measure"].as<size_t>());

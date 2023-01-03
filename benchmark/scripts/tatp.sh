@@ -2,7 +2,7 @@
 
 
 for sf in 10000 100000 1000000; do
-  for pm in "true" "false"; do
+  for pm in "false" "true"; do
     printf "*** TATP (scale factor %s) ***\n" "$sf"
     path=""
     if [ "$pm" = "true" ]
@@ -30,7 +30,7 @@ for sf in 10000 100000 1000000; do
     #done
   done
 
-  rm $path
+  # rm $path
 
 #  printf "Loading data into DuckDB...\n"
 #  ./tatp_duckdb --load --records=$sf
