@@ -11,7 +11,7 @@ for sf in 10000 100000 1000000; do
     else
       path+="benchmark.db"
     fi
-    [ ! -e $path ] || rm $path
+    [ ! -e $path ] || rm $path*
 
     printf "Loading data into SQLite3 Pmem=$pm\n"
     ./tatp_bench --load --records=$sf --path=$path --pmem=$pm
@@ -22,10 +22,10 @@ for sf in 10000 100000 1000000; do
       command="./tatp_bench --run --records=$sf --path=$path --pmem=$pm" 
       printf "%s\n" "$command"
       for trial in {1..3}; do
-      #   #printf "%s," "$trial"
-         eval "$command"
+      #    printf "%s," "$trial"
+          eval "$command"
       done
     #done
   done
-  rm $path
+  rm $path*
 done

@@ -35,7 +35,7 @@ typedef int8_t i8;
 #endif
 
 #ifndef GROW_FACTOR_FILE
-# define GROW_FACTOR_FILE 1.5
+# define GROW_FACTOR_FILE 2
 #endif
 
 /* shm must be at least 32kB large*/

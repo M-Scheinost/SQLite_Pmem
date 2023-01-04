@@ -120,6 +120,13 @@
 #include <sys/mman.h>
 #include <sys/stat.h>
 
+
+/**
+ * forward declerations
+*/
+static int pmem_delete_file(const char *zPath, int dirSync);
+
+
 /*
 ** Different Unix systems declare open() in different ways.  Same use
 ** open(const char*,int,mode_t).  Others use open(const char*,int,...).
@@ -349,6 +356,7 @@ struct Persistent_File {
   size_t shm_used_size;    /* used mem of wal-index */
   int shm_is_pmem;
   int times_mapped; /* the number of times pmem_fetch was called*/
+  char *shm_path;
 };
 
 
@@ -385,15 +393,12 @@ void unmap_pmem(Persistent_File* p){
 
 
 /*
- * writes the buffer to pmem
- * no need to close anything since mappings are unmapped after writing
- * this function just frees the buffer
 */
 static int pmem_close(sqlite3_file *pFile){
   // // printf("close\n");
   Persistent_File *p = (Persistent_File*)pFile;
   
-  pmem_unmap(p->pmem_file, p->pmem_size);
+  unmap_pmem(p);
   return SQLITE_OK;
 }
 
@@ -539,22 +544,24 @@ static int pmem_open_shm(Persistent_File *p, size_t size){
   }
   
   // create shm-file-name
-  int path_length = strlen(p->path);
-  char shm_path[path_length + 4];
-  memcpy(shm_path, p->path, path_length);
-  shm_path[path_length + 4] = '\0';
-  shm_path[path_length + 3] = 'm';
-  shm_path[path_length + 2] = 'h';
-  shm_path[path_length + 1] = 's';
-  shm_path[path_length] = '-';
+  //if(p->shm_path == NULL){
+    int path_length = strlen(p->path);
+    char sp[path_length + 4];
+    memcpy(sp, p->path, path_length);
+    sp[path_length + 4] = '\0';
+    sp[path_length + 3] = 'm';
+    sp[path_length + 2] = 'h';
+    sp[path_length + 1] = 's';
+    sp[path_length] = '-';
+    //memcpy(p->shm_path, sp, path_length+4);
+    //p->shm_path = &sp[0];
+  //}
+  //printf("%s\n", p->shm_path);
 
-  if(p->shm_file == NULL){
-
-  }
   struct stat st;
-  int rc = stat(shm_path, &st);
+  int rc = stat(sp, &st);
   if(rc){
-    FILE *f = fopen(shm_path, "w");
+    FILE *f = fopen(sp, "w");
     if(f == NULL){
       return SQLITE_IOERR;
     }
@@ -566,7 +573,7 @@ static int pmem_open_shm(Persistent_File *p, size_t size){
   }
 
   // 666 = rw-rw-rw
-  if ((p->shm_file = (char *)pmem_map_file(shm_path, size, PMEM_FILE_CREATE,0666, &p->shm_size, &p->shm_is_pmem)) == NULL) {
+  if ((p->shm_file = (char *)pmem_map_file(sp, size, PMEM_FILE_CREATE,0666, &p->shm_size, &p->shm_is_pmem)) == NULL) {
     return SQLITE_NOMEM;
   }
   return SQLITE_OK;
@@ -629,7 +636,7 @@ static int pmem_map_shm(
 /**
  * no locking in this vfs
 */
-static int unixShmLock(
+inline static int unixShmLock(
   sqlite3_file *fd,          /* Database file holding the shared memory */
   int ofst,                  /* First lock to acquire or release */
   int n,                     /* Number of locks to acquire or release */
@@ -671,11 +678,15 @@ static int pmem_shm_unmap(
   int deleteFlag                  /* Delete shared-memory if true */
 ){
   Persistent_File *p = (Persistent_File*)pFile;
+  if(p->shm_file == 0){
+    return SQLITE_OK;
+  }
   pmem_unmap(p->shm_file, p->shm_size);
+  p->shm_file = 0;
   if(deleteFlag){
     p->shm_size = 0;
     p->shm_used_size = 0;
-    p->shm_file = 0;
+    //pmem_delete_file(p->shm_path,1);
   }
   return SQLITE_OK; 
 }
@@ -813,6 +824,7 @@ static int pmem_open(
   p->shm_is_pmem = 0;
   p->shm_size = 0;
   p->shm_used_size = 0;
+  p->shm_path = 0;
 
   // // printf("open finished\n");
   return rc;
@@ -825,6 +837,37 @@ static int pmem_open(
 ** file has been synced to disk before returning.
 */
 static int demoDelete(sqlite3_vfs *pVfs, const char *zPath, int dirSync){
+  int rc;                         /* Return code */
+
+  rc = unlink(zPath);
+  if( rc!=0 && errno==ENOENT ) return SQLITE_OK;
+
+  if( rc==0 && dirSync ){
+    int dfd;                      /* File descriptor open on directory */
+    int i;                        /* Iterator variable */
+    char *zSlash;
+    char zDir[MAXPATHNAME+1];     /* Name of directory containing file zPath */
+
+    /* Figure out the directory name from the path of the file deleted. */
+    sqlite3_snprintf(MAXPATHNAME, zDir, "%s", zPath);
+    zDir[MAXPATHNAME] = '\0';
+    zSlash = strrchr(zDir,'/');
+    if( zSlash ){
+      /* Open a file-descriptor on the directory. Sync. Close. */
+      zSlash[0] = 0;
+      dfd = open(zDir, O_RDONLY, 0);
+      if( dfd<0 ){
+        rc = -1;
+      }else{
+        rc = fsync(dfd);
+        close(dfd);
+      }
+    }
+  }
+  return (rc==0 ? SQLITE_OK : SQLITE_IOERR_DELETE);
+}
+
+static int pmem_delete_file(const char *zPath, int dirSync){
   int rc;                         /* Return code */
 
   rc = unlink(zPath);

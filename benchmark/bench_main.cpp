@@ -4,6 +4,7 @@
 #include "dbbench/benchmarks/tatp.hpp"
 #include "dbbench/runner.hpp"
 #include "cxxopts.hpp"
+#include <fstream>
 
 #include "../vfs/pmem_vfs.h"
 
@@ -27,7 +28,7 @@ int step(sqlite3_stmt *stmt, size_t &count){
   return sqlite3_reset(stmt);
 }
 
-int step(sqlite3_stmt *stmt){
+int step_single(sqlite3_stmt *stmt){
   size_t count;
   return step(stmt, count);
 }
@@ -54,7 +55,7 @@ public:
               sqlite3_stmt *stmnt = stmts_[0];
               rc = sqlite3_bind_int64(stmnt, 1, (sqlite3_int64)p.s_id);
               if(rc){cout << "Transition_1 bind "<< rc << endl;}
-              rc = step(stmnt);
+              rc = step_single(stmnt);
               if(rc){cout << "Transition_1 step "<< rc << endl;}
               return true;
             },
@@ -101,7 +102,7 @@ public:
               if(rc){cout << "Transition_4 bind "<< rc << endl;}
               rc = sqlite3_bind_int64(stmnt, 2, (sqlite3_int64)p.s_id);
               if(rc){cout << "Transition_4 bind "<< rc << endl;}
-              rc = step(stmnt);
+              rc = step_single(stmnt);
               if(rc){cout << "Transition_4 step "<< rc << endl;}
 
               stmnt = stmts_[4];
@@ -111,7 +112,7 @@ public:
               if(rc){cout << "Transition_4 bind 2 "<< rc << endl;}
               rc = sqlite3_bind_int(stmnt, 3, (int)p.sf_type);
               if(rc){cout << "Transition_4 bind 2 "<< rc << endl;}
-              rc = step(stmnt);
+              rc = step_single(stmnt);
               if(rc){cout << "Transition_4 step2 "<< rc << endl;}
 
               rc = sqlite3_exec(db, "COMMIT;", NULL,NULL,NULL);
@@ -127,7 +128,7 @@ public:
               if(rc){cout << "Transition_5 bind "<< rc << endl;}
               rc = sqlite3_bind_text(stmnt, 2, p.sub_nbr.c_str(), -1, SQLITE_TRANSIENT);
               if(rc){cout << "Transition_5 bind "<< rc << endl;}
-              rc = step(stmnt);
+              rc = step_single(stmnt);
               if(rc){cout << "Transition_5 step "<< rc << endl;}
 
               return true;
@@ -145,14 +146,17 @@ public:
               size_t s_id;
               if(rc == SQLITE_ROW){
                 s_id = sqlite3_column_int64(stmnt,0);
-                rc = step(stmnt);
+                rc = step_single(stmnt);
+              }
+              else if(rc == SQLITE_DONE){
+                return false;
               }
               if(rc){cout << "Transition_6 step "<< rc << endl;}
 
               stmnt = stmts_[7];
               rc = sqlite3_bind_int64(stmnt, 1, (sqlite3_int64)s_id);
               if(rc){cout << "Transition_6 bind2 "<< rc << endl;}
-              rc = step(stmnt);
+              rc = step_single(stmnt);
               if(rc){cout << "Transition_6 step 2 "<< rc << endl;}
 
               stmnt = stmts_[8];
@@ -167,7 +171,7 @@ public:
               rc = sqlite3_bind_text(stmnt, 5, p.numberx.c_str(), -1, SQLITE_TRANSIENT);
               if(rc){cout << "Transition_6 bind3 "<< rc << endl;}
               
-              rc = step(stmnt);
+              rc = step_single(stmnt);
               bool success = false;
               if (rc) {
                 if(rc != SQLITE_CONSTRAINT){cout << "Transition_6 step3 "<< rc << endl;}
@@ -190,7 +194,10 @@ public:
               size_t s_id;
               if(rc == SQLITE_ROW){
                 s_id = sqlite3_column_int64(stmnt,0);
-                rc = step(stmnt);
+                rc = step_single(stmnt);
+              }
+              else if(rc == SQLITE_DONE){
+                return false;
               }
               if(rc){cout << "Transition_7 step "<< rc << endl;}
 
@@ -201,7 +208,7 @@ public:
               if(rc){cout << "Transition_7 bind2 "<< rc << endl;}
               rc = sqlite3_bind_int(stmnt, 3, (int)p.start_time);
               if(rc){cout << "Transition_7 bind2 "<< rc << endl;}
-              rc = step(stmnt);
+              rc = step_single(stmnt);
               if(rc){cout << "Transition_7 step2 "<< rc << endl;}
 
               rc = sqlite3_exec(db, "COMMIT;", NULL,NULL,NULL);
@@ -272,7 +279,7 @@ void load_db_1(sqlite3 *db, size_t db_size){
               rc = sqlite3_bind_int64(subscriber, 34, (sqlite3_int64)r.vlr_location);
               if(rc){cout <<"SR_bind:\t" << rc << endl;}
 
-              rc = step(subscriber);
+              rc = step_single(subscriber);
               if(rc){cout <<"SR_step:\t" << rc << endl;}
             },
 
@@ -291,7 +298,7 @@ void load_db_1(sqlite3 *db, size_t db_size){
               rc = sqlite3_bind_text(access_info, 6, r.data4.c_str(), -1, SQLITE_TRANSIENT);
               if(rc){cout <<"AIR_bind:\t" << rc << endl;}
       
-              rc = step(access_info);
+              rc = step_single(access_info);
               if(rc){cout <<"AIR_step:\t" << rc << endl;}
             },
 
@@ -310,7 +317,7 @@ void load_db_1(sqlite3 *db, size_t db_size){
               rc = sqlite3_bind_text(special_facility, 6, r.data_b.c_str(), -1, SQLITE_TRANSIENT);
               if(rc){cout << "SF_bind:\t" << rc << endl;}
 
-              rc = step(special_facility);
+              rc = step_single(special_facility);
               if(rc){cout << "SF_step:\t" << rc << endl;}
             },
 
@@ -327,7 +334,7 @@ void load_db_1(sqlite3 *db, size_t db_size){
               rc = sqlite3_bind_text(call_forwarding, 5, r.numberx.c_str(), -1, SQLITE_TRANSIENT);
               if(rc){cout <<"CFR_bind:\t" << rc << endl;}
 
-              rc = step(call_forwarding);
+              rc = step_single(call_forwarding);
               if(rc){cout <<"CFR_step:\t" << rc << endl;}
             },
         },
@@ -390,16 +397,17 @@ int main (int argc, char** argv){
   string path = result["path"].as<std::string>();
   bool pmem = result["pmem"].as<bool>();
 
-  //if (result.count("load")) {
+  if (result.count("load")) {
     sqlite3 *db = open_db(path.c_str(), pmem);
     load_db_1(db, n_subscriber_records);
     close_db(db);
-  //}
+  }
 
   if (result.count("run")) {
     int rc;
     std::vector<Worker> workers;
     sqlite3 *db = open_db(path.c_str(), pmem);
+    //rc = sqlite3_exec(db,"PRAGMA journal_mode=TRUNCATE", NULL,NULL,NULL);
     rc = sqlite3_exec(db,"PRAGMA journal_mode=WAL", NULL,NULL,NULL);
     if(rc){cout << "Pragma WAL not working: " << rc << endl;}
 
@@ -408,6 +416,10 @@ int main (int argc, char** argv){
     double throughput = dbbench::run(workers, result["warmup"].as<size_t>(),result["measure"].as<size_t>());
     std::cout << throughput << std::endl;
     close_db(db);
+
+    ofstream result_file {"/home/scheinost/SQLite_Pmem/results.csv", ios::app};
+
+    result_file << '"' << path << "\",\""<< n_subscriber_records << "\",\"" << pmem << "\",\"" << throughput << '"' << endl;
   }
   return 0;
 }
