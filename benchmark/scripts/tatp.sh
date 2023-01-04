@@ -1,7 +1,7 @@
 #!/bin/bash
 
 
-for sf in 100000 100000 1000000; do
+for sf in 10000 100000 500000 1000000 2000000; do
   for pm in "true" "false"; do
     printf "*** TATP (scale factor $sf ) ***\n"
     path=""
