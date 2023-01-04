@@ -497,15 +497,15 @@ static int pmem_file_size(sqlite3_file *pFile, sqlite_int64 *pSize){
 ** a reserved lock on the database file. This ensures that if a hot-journal
 ** file is found in the file-system it is rolled back.
 */
-static int pmem_lock(sqlite3_file *pFile, int eLock){
+inline static int pmem_lock(sqlite3_file *pFile, int eLock){
   // // printf("lock\n");
   return SQLITE_OK;
 }
-static int pmem_unlock(sqlite3_file *pFile, int eLock){
+inline static int pmem_unlock(sqlite3_file *pFile, int eLock){
   // // printf("unlock\n");
   return SQLITE_OK;
 }
-static int pmem_check_reserved_lock(sqlite3_file *pFile, int *pResOut){
+inline static int pmem_check_reserved_lock(sqlite3_file *pFile, int *pResOut){
   // // printf("reserved lock\n");
   *pResOut = 0;
   return SQLITE_OK;
@@ -1075,17 +1075,17 @@ static int unixFullPathname(
 ** extensions compiled as shared objects. This simple VFS does not support
 ** this functionality, so the following functions are no-ops.
 */
-static void *demoDlOpen(sqlite3_vfs *pVfs, const char *zPath){
+inline static void *demoDlOpen(sqlite3_vfs *pVfs, const char *zPath){
   return 0;
 }
-static void demoDlError(sqlite3_vfs *pVfs, int nByte, char *zErrMsg){
+inline static void demoDlError(sqlite3_vfs *pVfs, int nByte, char *zErrMsg){
   sqlite3_snprintf(nByte, zErrMsg, "Loadable extensions are not supported");
   zErrMsg[nByte-1] = '\0';
 }
-static void (*demoDlSym(sqlite3_vfs *pVfs, void *pH, const char *z))(void){
+inline static void (*demoDlSym(sqlite3_vfs *pVfs, void *pH, const char *z))(void){
   return 0;
 }
-static void demoDlClose(sqlite3_vfs *pVfs, void *pHandle){
+inline static void demoDlClose(sqlite3_vfs *pVfs, void *pHandle){
   return;
 }
 
@@ -1094,7 +1094,7 @@ static void demoDlClose(sqlite3_vfs *pVfs, void *pHandle){
 ** Parameter zByte points to a buffer nByte bytes in size. Populate this
 ** buffer with pseudo-random data.
 */
-static int demoRandomness(sqlite3_vfs *pVfs, int nByte, char *zByte){
+inline static int demoRandomness(sqlite3_vfs *pVfs, int nByte, char *zByte){
   return SQLITE_OK;
 }
 

@@ -26,6 +26,6 @@ for sf in 10000 100000 1000000; do
           eval "$command"
       done
     #done
+    rm $path*
   done
-  rm $path*
 done
