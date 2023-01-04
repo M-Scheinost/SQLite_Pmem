@@ -43,7 +43,12 @@ typedef int8_t i8;
 
 /* This is 32kB of pmem in bytes*/
 #ifndef PMEM_LEN
-# define PMEM_LEN ((off_t)(1 << 15))
+# define PMEM_LEN ((off_t)(1 << 13))
+#endif
+
+// 2^30 ~ 1GB
+#ifndef PMEM_MAX_LEN
+# define PMEM_MAX_LEN ((off_t)(1 << 30))
 #endif
 
 /*

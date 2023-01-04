@@ -360,27 +360,25 @@ struct Persistent_File {
 };
 
 
-int map_pmem(Persistent_File* p, size_t size){
-  if(size == 0 ){
+int map_pmem(Persistent_File* p, size_t new_size){
+  //printf("map_pmem%s\t%li\n",p->path, new_size);
+  if(new_size == 0 ){
     struct stat st;
     int rc = stat(p->path, &st);
     if(rc){
       return SQLITE_IOERR;
     }
-    size = st.st_size;
+    new_size = st.st_size;
   }
 
-  if(p->pmem_size == size){
+  if(p->pmem_size == new_size){
     return SQLITE_OK;
   }
-
-  if(p->pmem_file){
-    pmem_unmap(p->pmem_file, p->pmem_size);
+  if(new_size > PMEM_MAX_LEN){
+    new_size = PMEM_MAX_LEN;
   }
 
-  if ((p->pmem_file = (char *)pmem_map_file(p->path, size, PMEM_FILE_CREATE, 0666, &p->pmem_size, &p->is_pmem)) == NULL) {
-    return SQLITE_NOMEM;
-  }
+  p->pmem_file = (char *)pmem_map_file(p->path, new_size, PMEM_FILE_CREATE, 0666, &p->pmem_size, &p->is_pmem);
   return SQLITE_OK;
 }
 
@@ -414,8 +412,8 @@ static int pmem_read(
   // // printf("read\n");
   Persistent_File *p = (Persistent_File*)pFile;
 
-  if(offset + buffer_size < p->used_size){
-    memcpy(buffer,&p->pmem_file[offset], buffer_size);
+  if(offset + buffer_size <= p->used_size){
+    memcpy(buffer,&((char*)p->pmem_file)[offset], buffer_size);
   }
   else{
     return SQLITE_IOERR_SHORT_READ;
@@ -435,7 +433,7 @@ static int pmem_write (
   sqlite_int64 offset
 ){
   Persistent_File *p = (Persistent_File*)pFile;
-  
+  //printf("try to write %i bytes at offset %lli to %s\n", buffer_size,offset,  p->path);
   assert ( pFile );
   assert( buffer_size > 0);
 
@@ -445,7 +443,7 @@ static int pmem_write (
       /* automatically flushes data to pmem no extra call needed*/
       //pmem_memcpy(p->pmem_file + offset, buffer, buffer_size, PMEM_F_MEM_NONTEMPORAL);
   
-  memcpy(&p->pmem_file[offset], buffer, buffer_size);
+  memcpy(&((char*)p->pmem_file)[offset], buffer, buffer_size);
 
   if(offset + buffer_size > p->used_size){
     p->used_size = offset + buffer_size;
@@ -557,6 +555,8 @@ static int pmem_open_shm(Persistent_File *p, size_t size){
     //p->shm_path = &sp[0];
   //}
   //printf("%s\n", p->shm_path);
+
+  //printf("map_pmem%s\t%li\n",sp, size);
 
   struct stat st;
   int rc = stat(sp, &st);
@@ -797,8 +797,6 @@ static int pmem_open(
 
   p->path = file_path;
   p->base.pMethods = &pmem_io;
-  //p->pVfs = pVfs;
-  //p->pMethod = &pmem_io;
 
 // printf("OPEN_FLAGS:\t%i\n", flags);
 
@@ -819,14 +817,6 @@ static int pmem_open(
     fclose(f);
     rc = map_pmem(p, PMEM_LEN);
   }
-
-  p->shm_file = 0;
-  p->shm_is_pmem = 0;
-  p->shm_size = 0;
-  p->shm_used_size = 0;
-  p->shm_path = 0;
-
-  // // printf("open finished\n");
   return rc;
 }
 

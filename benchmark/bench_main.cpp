@@ -251,9 +251,12 @@ void load_db_1(sqlite3 *db, size_t db_size){
 
   dbbench::tatp::RecordGenerator record_generator(db_size);
   int i = 0;
-  sqlite3_exec(db, "BEGIN DEFERRED;", NULL,NULL,NULL);
+  
   while(auto record = record_generator.next()){
-    // if(i++ % 100000 == 0)
+    
+    if(i % 1000 == 0){
+      sqlite3_exec(db, "BEGIN DEFERRED;", NULL,NULL,NULL);
+    }
     //   cout << i << " " << flush;
     std::visit(
         overloaded{
@@ -339,10 +342,17 @@ void load_db_1(sqlite3 *db, size_t db_size){
             },
         },
         *record);
+        if(i%1000 == 0){
+          rc = sqlite3_exec(db, "COMMIT;", NULL,NULL,NULL);
+          if(rc){cout <<"load commit: " << stat << endl;}
+        }
+        i++;
   }
-  rc = sqlite3_exec(db, "COMMIT;", NULL,NULL,NULL);
-  if(rc){cout <<"load commit: " << stat << endl;}
-
+  
+  int *frames_saved;
+  rc = sqlite3_wal_checkpoint_v2(db, NULL, SQLITE_CHECKPOINT_FULL, NULL, frames_saved);
+  if(rc){cout <<"WAL-Checkpoint: " << stat << endl;}
+  
   rc = sqlite3_finalize(call_forwarding);
   if(rc){cout <<"CFR_step:\t" << rc << endl;}
   rc = sqlite3_finalize(special_facility);

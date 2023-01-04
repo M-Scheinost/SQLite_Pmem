@@ -1,7 +1,7 @@
 #!/bin/bash
 
 
-for sf in 10000 100000 1000000; do
+for sf in 100000 100000 1000000; do
   for pm in "true" "false"; do
     printf "*** TATP (scale factor $sf ) ***\n"
     path=""
@@ -22,7 +22,7 @@ for sf in 10000 100000 1000000; do
       command="./tatp_bench --run --records=$sf --path=$path --pmem=$pm" 
       printf "%s\n" "$command"
       for trial in {1..3}; do
-      #    printf "%s," "$trial"
+          printf "%s," "$trial"
           eval "$command"
       done
     #done
