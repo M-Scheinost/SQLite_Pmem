@@ -2,7 +2,7 @@
 
 
 for sf in 10000 100000 500000 1000000 2000000; do
-  for pm in "wal-only" "false" "wal-true"; do
+  for pm in "wal-only" "false" "true"; do
     printf "*** TATP (scale factor $sf ) ***\n"
     path=""
     if [ "$pm" = "true" ]
