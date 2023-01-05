@@ -28,3 +28,4 @@
 "benchmark.db","2000000","0","34227.5"
 "benchmark.db","2000000","0","34317.3"
 "benchmark.db","2000000","0","34095.6"
+"Loading","/mnt/pmem0/scheinost/benchmark.db","10000","true","7161","ms"

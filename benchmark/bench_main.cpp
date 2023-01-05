@@ -5,8 +5,10 @@
 #include "dbbench/runner.hpp"
 #include "cxxopts.hpp"
 #include <fstream>
+#include <chrono>
 
 #include "../vfs/pmem_vfs.h"
+#include "../vfs/pmem_wal_only_vfs.h"
 
 using namespace std;
 template <class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
@@ -363,13 +365,17 @@ void load_db_1(sqlite3 *db, size_t db_size){
   if(rc){cout <<"SR_step:\t" << rc << endl;}
 }
 
-sqlite3* open_db(const char* path, bool pmem){
+sqlite3* open_db(const char* path, string pmem){
   sqlite3 *db;
   int status;
   int flags = SQLITE_OPEN_CREATE | SQLITE_OPEN_READWRITE;
-  if(pmem){
+  if(pmem == "true"){
     sqlite3_vfs_register(sqlite3_pmem_vfs(), 0);
     status = sqlite3_open_v2(path, &db, flags, "PMem_VFS");
+  }
+  else if(pmem == "wal-only"){
+    sqlite3_vfs_register(sqlite3_pmem_wal_only_vfs(), 0);
+    status = sqlite3_open_v2(path, &db, flags, "PMem_VFS_wal_only");
   }
   else{
     status = sqlite3_open_v2(path, &db, flags, "unix");
@@ -392,7 +398,7 @@ int main (int argc, char** argv){
   adder("journal_mode", "Journal mode", cxxopts::value<std::string>()->default_value("DELETE"));
   adder("cache_size", "Cache size", cxxopts::value<std::string>()->default_value("-1000000"));
   adder("path", "Path", cxxopts::value<std::string>()->default_value("/mnt/pmem0/scheinost/benchmark.db"));
-  adder("pmem", "Pmem", cxxopts::value<bool>()->default_value("true"));
+  adder("pmem", "Pmem", cxxopts::value<std::string>()->default_value("true"));
 
   cxxopts::ParseResult result = options.parse(argc, argv);
 
@@ -405,12 +411,19 @@ int main (int argc, char** argv){
   string journal_mode = result["journal_mode"].as<std::string>();
   string cache_size = result["cache_size"].as<std::string>();
   string path = result["path"].as<std::string>();
-  bool pmem = result["pmem"].as<bool>();
+  string pmem = result["pmem"].as<string>();
 
   if (result.count("load")) {
     sqlite3 *db = open_db(path.c_str(), pmem);
+    auto start = chrono::steady_clock::now();
+    
     load_db_1(db, n_subscriber_records);
+    auto end = chrono::steady_clock::now();
+    
     close_db(db);
+    auto time = chrono::duration_cast<chrono::milliseconds>(end - start).count();
+    ofstream result_file {"/home/scheinost/SQLite_Pmem/results.csv", ios::app};
+    result_file <<"\"Loading\",\"" << path << "\",\""<< n_subscriber_records << "\",\"" << pmem << "\",\"" << time << "\",\"ms\"" << endl;
   }
 
   if (result.count("run")) {
@@ -429,7 +442,7 @@ int main (int argc, char** argv){
 
     ofstream result_file {"/home/scheinost/SQLite_Pmem/results.csv", ios::app};
 
-    result_file << '"' << path << "\",\""<< n_subscriber_records << "\",\"" << pmem << "\",\"" << throughput << '"' << endl;
+    result_file <<"\"Benchmark\",\"" << path << "\",\""<< n_subscriber_records << "\",\"" << pmem << "\",\"" << throughput << "\",\"tps\"" << endl;
   }
   return 0;
 }
