@@ -2,7 +2,7 @@
 
 
 for sf in 10000 100000 500000 1000000 2000000; do
-  for pm in "true" "false" "wal-only"; do
+  for pm in "wal-only" "false" "wal-true"; do
     printf "*** TATP (scale factor $sf ) ***\n"
     path=""
     if [ "$pm" = "true" ]
@@ -27,7 +27,7 @@ for sf in 10000 100000 500000 1000000 2000000; do
       done
     #done
     rm $path*
-    if ["$pm" = "wal-only"]
+    if [ "$pm" = "wal-only" ]
     then
       rm /mnt/pmem0/scheinost/database.db-wal
       rm /mnt/pmem0/scheinost/database.db-shm
