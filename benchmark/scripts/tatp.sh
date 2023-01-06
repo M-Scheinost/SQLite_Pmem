@@ -24,7 +24,7 @@ for sf in 10000 100000 1000000 10000000; do
       printf "%s\n" "$command"
       for trial in {1..3}; do
           printf "%s," "$trial"
-          # eval "$command"
+          eval "$command"
       done
     #done
     rm $path*
