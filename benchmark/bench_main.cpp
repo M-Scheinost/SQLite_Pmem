@@ -263,8 +263,8 @@ void load_db_1(sqlite3 *db, size_t db_size){
   
   while(auto record = record_generator.next()){
     
-    if(i % 1000 == 0){
-      sqlite3_exec(db, "BEGIN DEFERRED;", NULL,NULL,NULL);
+    if(i % 50000 == 0){
+      sqlite3_exec(db, "BEGIN EXCLUSIVE;", NULL,NULL,NULL);
     }
     //   cout << i << " " << flush;
     std::visit(
@@ -351,7 +351,7 @@ void load_db_1(sqlite3 *db, size_t db_size){
             },
         },
         *record);
-        if(i%1000 == 0){
+        if(i%50000 == 0){
           rc = sqlite3_exec(db, "COMMIT;", NULL,NULL,NULL);
           if(rc){cout <<"load commit: " << stat << endl;}
         }
@@ -440,6 +440,9 @@ int main (int argc, char** argv){
     //rc = sqlite3_exec(db,"PRAGMA journal_mode=TRUNCATE", NULL,NULL,NULL);
     rc = sqlite3_exec(db,"PRAGMA journal_mode=WAL", NULL,NULL,NULL);
     if(rc){cout << "Pragma WAL not working: " << rc << endl;}
+    string cs = "PRAGMA cache_size=" + cache_size;
+    rc = sqlite3_exec(db,cs.c_str(), NULL,NULL,NULL);
+    if(rc){cout << "Pragma cache size not working: " << rc << endl;}
 
     workers.emplace_back(db, n_subscriber_records);
 

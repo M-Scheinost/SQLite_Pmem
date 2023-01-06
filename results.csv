@@ -309,3 +309,26 @@
 "Benchmark","benchmark.db","10000","false","38340.9","tps"
 "Benchmark","benchmark.db","10000","false","33160.6","tps"
 "Loading","/mnt/pmem0/scheinost/benchmark.db","10000","true","9148","ms"
+#########################################
+		new test run
+#########################################
+"Loading","/mnt/pmem0/scheinost/benchmark.db","10000","true","6834","ms"
+"Benchmark","/mnt/pmem0/scheinost/benchmark.db","10000","true","47102.3","tps"
+#########################################
+		new test run
+#########################################
+"Loading","/mnt/pmem0/scheinost/benchmark.db","10000","true","7103","ms"
+"Benchmark","/mnt/pmem0/scheinost/benchmark.db","10000","true","44302.7","tps"
+#########################################
+		new test run
+#########################################
+"Loading","/mnt/pmem0/scheinost/benchmark.db","10000","true","6919","ms"
+"Benchmark","/mnt/pmem0/scheinost/benchmark.db","10000","true","45362.6","tps"
+#########################################
+		new test run
+#########################################
+"Loading","/mnt/pmem0/scheinost/benchmark.db","10000","true","6771","ms"
+#########################################
+		new test run
+#########################################
+"Loading","/mnt/pmem0/scheinost/benchmark.db","10000","true","6883","ms"
