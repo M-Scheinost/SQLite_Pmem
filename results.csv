@@ -332,3 +332,6 @@
 		new test run
 #########################################
 "Loading","/mnt/pmem0/scheinost/benchmark.db","10000","true","6883","ms"
+"Loading","/mnt/pmem0/scheinost/bench.db","10000","true","7333","ms"
+"Loading","/mnt/pmem0/scheinost/bench.db","5000","true","3548","ms"
+"Loading","/mnt/pmem0/scheinost/bench.db","2000","true","1480","ms"
