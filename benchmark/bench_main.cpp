@@ -260,12 +260,12 @@ void load_db_1(sqlite3 *db, size_t db_size){
 
   dbbench::tatp::RecordGenerator record_generator(db_size);
   int i = 0;
-  
+  sqlite3_exec(db, "BEGIN EXCLUSIVE;", NULL,NULL,NULL);
   while(auto record = record_generator.next()){
     
-    if(i % 50000 == 0){
-      sqlite3_exec(db, "BEGIN EXCLUSIVE;", NULL,NULL,NULL);
-    }
+    // if(i % 50000 == 0){
+    //   sqlite3_exec(db, "BEGIN EXCLUSIVE;", NULL,NULL,NULL);
+    // }
     //   cout << i << " " << flush;
     std::visit(
         overloaded{
@@ -351,12 +351,15 @@ void load_db_1(sqlite3 *db, size_t db_size){
             },
         },
         *record);
-        if(i%50000 == 0){
-          rc = sqlite3_exec(db, "COMMIT;", NULL,NULL,NULL);
-          if(rc){cout <<"load commit: " << stat << endl;}
-        }
-        i++;
+        // if(i%50000 == 0){
+        //   rc = sqlite3_exec(db, "COMMIT;", NULL,NULL,NULL);
+        //   if(rc){cout <<"load commit: " << stat << endl;}
+        // }
+        // i++;
   }
+
+  rc = sqlite3_exec(db, "COMMIT;", NULL,NULL,NULL);
+  if(rc){cout <<"load commit: " << stat << endl;}
   
   int *frames_saved;
   rc = sqlite3_wal_checkpoint_v2(db, NULL, SQLITE_CHECKPOINT_FULL, NULL, frames_saved);
@@ -423,12 +426,13 @@ int main (int argc, char** argv){
   if (result.count("load")) {
     sqlite3 *db = open_db(path.c_str(), pmem);
     auto start = chrono::steady_clock::now();
-    
-    load_db_1(db, n_subscriber_records);
+    // for(int i = 0; i < n_subscriber_records/10000; i++){
+       load_db_1(db, n_subscriber_records);
+    //}
     auto end = chrono::steady_clock::now();
-    
-    close_db(db);
     auto time = chrono::duration_cast<chrono::milliseconds>(end - start).count();
+    close_db(db);
+    
     ofstream result_file {"/home/scheinost/SQLite_Pmem/results.csv", ios::app};
     result_file <<"\"Loading\",\"" << path << "\",\""<< n_subscriber_records << "\",\"" << pmem << "\",\"" << time << "\",\"ms\"" << endl;
   }

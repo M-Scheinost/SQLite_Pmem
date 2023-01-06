@@ -38,7 +38,7 @@ typedef int8_t i8;
 # define GROW_FACTOR_FILE 2
 #endif
 
-/* shm must be at least 32kB large*/
+/* shm must be at least 32kB 2^15 large*/
 #define SHM_BASE_SIZE ((off_t)(1 << 15))
 
 /* This is 32kB of pmem in bytes*/
@@ -48,7 +48,7 @@ typedef int8_t i8;
 
 // 2^30 ~ 1GB
 #ifndef PMEM_MAX_LEN
-# define PMEM_MAX_LEN ((off_t)(1 << 30))
+#define PMEM_MAX_LEN ((off_t)(1 << 31))
 #endif
 
 /*

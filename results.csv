@@ -290,3 +290,34 @@
 "Benchmark","benchmark.db","100000","pmem-nvme","41570.9","tps"
 "Benchmark","benchmark.db","100000","pmem-nvme","41926.2","tps"
 "Benchmark","benchmark.db","100000","pmem-nvme","41797.7","tps"
+#########################################
+		new test run
+#########################################
+"Loading","/mnt/pmem0/scheinost/benchmark.db","10000","true","149","ms"
+"Benchmark","/mnt/pmem0/scheinost/benchmark.db","10000","true","46545.6","tps"
+"Benchmark","/mnt/pmem0/scheinost/benchmark.db","10000","true","46470.2","tps"
+"Benchmark","/mnt/pmem0/scheinost/benchmark.db","10000","true","46759.8","tps"
+"Loading","benchmark.db","10000","false","168","ms"
+"Benchmark","benchmark.db","10000","false","46146.7","tps"
+"Benchmark","benchmark.db","10000","false","45807.8","tps"
+"Benchmark","benchmark.db","10000","false","46125.1","tps"
+"Loading","/mnt/pmem0/scheinost/benchmark.db","10000","true","149","ms"
+"Benchmark","/mnt/pmem0/scheinost/benchmark.db","10000","true","46817.1","tps"
+"Benchmark","/mnt/pmem0/scheinost/benchmark.db","10000","true","46576.8","tps"
+"Benchmark","/mnt/pmem0/scheinost/benchmark.db","10000","true","47240.6","tps"
+"Loading","benchmark.db","10000","pmem-nvme","153","ms"
+"Benchmark","benchmark.db","10000","pmem-nvme","46589.3","tps"
+"Benchmark","benchmark.db","10000","pmem-nvme","46817.1","tps"
+"Benchmark","benchmark.db","10000","pmem-nvme","46786.6","tps"
+"Loading","/mnt/pmem0/scheinost/benchmark.db","100000","true","1498","ms"
+#########################################
+		new test run
+#########################################
+"Loading","/mnt/pmem0/scheinost/benchmark.db","10000","true","503","ms"
+"Loading","benchmark.db","10000","false","175","ms"
+"Loading","/mnt/pmem0/scheinost/benchmark.db","10000","true","471","ms"
+"Loading","benchmark.db","10000","pmem-nvme","459","ms"
+"Loading","/mnt/pmem0/scheinost/benchmark.db","100000","true","5688","ms"
+"Loading","benchmark.db","100000","false","1929","ms"
+"Loading","/mnt/pmem0/scheinost/benchmark.db","100000","true","5723","ms"
+"Loading","benchmark.db","100000","pmem-nvme","5567","ms"

@@ -120,6 +120,8 @@
 #include <sys/mman.h>
 #include <sys/stat.h>
 
+#include "../sqlite/sqlite3.h"
+
 
 /**
  * forward declerations
@@ -443,11 +445,14 @@ static int pmem_write (
       /* automatically flushes data to pmem no extra call needed*/
       //pmem_memcpy(p->pmem_file + offset, buffer, buffer_size, PMEM_F_MEM_NONTEMPORAL);
   
-  if(p->is_pmem && !p->is_wal){
-      pmem_memcpy(&((char*)p->pmem_file)[offset], buffer, buffer_size, 0);
+  if(p->is_pmem){
+      //pmem_memcpy(&((char*)p->pmem_file)[offset],buffer, buffer_size, 0);
+      memcpy(&((char*)p->pmem_file)[offset], buffer, buffer_size);
+      pmem_persist(&((char*)p->pmem_file)[offset],buffer_size);
   }
   else{
-    memcpy(&((char*)p->pmem_file)[offset], buffer, buffer_size);
+      memcpy(&((char*)p->pmem_file)[offset], buffer, buffer_size);
+      pmem_msync(&((char*)p->pmem_file)[offset], buffer_size);
   }
   
 
@@ -579,7 +584,12 @@ static int pmem_open_shm(Persistent_File *p, size_t size){
     size = SHM_BASE_SIZE;
   }
   else{
-    size = st.st_size;
+    if(size < st.st_size){
+      size = st.st_size;
+    }
+  }
+  if(size > PMEM_MAX_LEN){
+    size = PMEM_MAX_LEN;
   }
 
   // 666 = rw-rw-rw
@@ -616,7 +626,7 @@ static int pmem_map_shm(
   void volatile **pp              /* OUT: Mapped memory */
 ){
   Persistent_File *p = (Persistent_File*)pFile;
-  // // printf("shm-map\n");
+  //printf("Mapped-shm with: %i size %i number\n", region_size, region_number);
 
   /** 
    * if file was not allocated and extending is allowed, allocate the file
@@ -631,11 +641,16 @@ static int pmem_map_shm(
     return SQLITE_OK;
     } 
   }
-
-  while(p->shm_size < region_size * region_number){
+  int number_region = region_number +1;
+  while(p->shm_size < region_size * number_region){
+    //printf("extended shm to: %li\n", p->shm_size * GROW_FACTOR_FILE);
     pmem_open_shm(p, p->shm_size * GROW_FACTOR_FILE);
   }
-  *pp = (volatile void**)p->shm_file + (region_number*region_size);
+  *pp = &((char*)p->shm_file)[region_number*region_size];
+
+  if(region_size * number_region > p->used_size){
+    p->shm_used_size = region_size * number_region;
+  }
 
   //if(p->shm < region_size * region_number){
   //  p->used_size = offset + buffer_size;
@@ -646,7 +661,7 @@ static int pmem_map_shm(
 /**
  * no locking in this vfs
 */
-inline static int unixShmLock(
+inline static int pmem_shm_lock(
   sqlite3_file *fd,          /* Database file holding the shared memory */
   int ofst,                  /* First lock to acquire or release */
   int n,                     /* Number of locks to acquire or release */
@@ -788,7 +803,7 @@ static int pmem_open(
     pmem_sector_size,               /* xSectorSize */
     pmem_device_characteristics,     /* xDeviceCharacteristics */
     pmem_map_shm,                     /* xShmMap */
-    unixShmLock,                /* xShmLock */
+    pmem_shm_lock,                /* xShmLock */
     pmem_shm_barrier,             /* xShmBarrier */
     pmem_shm_unmap,               /* xShmUnmap */
     pmem_fetch,                  /* xFetch */

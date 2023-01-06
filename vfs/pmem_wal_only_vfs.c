@@ -114,11 +114,13 @@
 
 #if !defined(SQLITE_TEST) || SQLITE_OS_UNIX
 
-#include "pmem_wal_only_vfs.h"
+#include "pmem_vfs.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
+
+#include "../sqlite/sqlite3.h"
 
 
 /**
@@ -443,7 +445,16 @@ static int pmem_write (
       /* automatically flushes data to pmem no extra call needed*/
       //pmem_memcpy(p->pmem_file + offset, buffer, buffer_size, PMEM_F_MEM_NONTEMPORAL);
   
-  memcpy(&((char*)p->pmem_file)[offset], buffer, buffer_size);
+  if(p->is_pmem){
+      //pmem_memcpy(&((char*)p->pmem_file)[offset],buffer, buffer_size, 0);
+      memcpy(&((char*)p->pmem_file)[offset], buffer, buffer_size);
+      pmem_persist(&((char*)p->pmem_file)[offset],buffer_size);
+  }
+  else{
+      memcpy(&((char*)p->pmem_file)[offset], buffer, buffer_size);
+      pmem_msync(&((char*)p->pmem_file)[offset], buffer_size);
+  }
+  
 
   if(offset + buffer_size > p->used_size){
     p->used_size = offset + buffer_size;
@@ -469,6 +480,10 @@ static int pmem_truncate(sqlite3_file *pFile, sqlite_int64 size){
 static int pmem_sync(sqlite3_file *pFile, int flags){
   // // printf("pmem sync\n");
   Persistent_File *p = (Persistent_File*)pFile;
+
+  if(p->is_pmem && !p->is_wal){
+    return SQLITE_OK;
+  }
 
   if(p->is_pmem){
     pmem_persist(p->pmem_file, p->pmem_size);
@@ -524,7 +539,7 @@ static int pmem_file_control(sqlite3_file *pFile, int op, void *pArg){
 */
 static int pmem_sector_size(sqlite3_file *pFile){
   /* 4096 is standard unix sector size*/
-  return 256;
+  return 4096;
 }
 static int pmem_device_characteristics(sqlite3_file *pFile){
   // // printf("device characteristics\n");
@@ -540,23 +555,6 @@ static int pmem_open_shm(Persistent_File *p, size_t size){
   if(p->path == 0 ){
     return SQLITE_IOERR;
   }
-  
-  // create shm-file-name
-  ////if(p->shm_path == NULL){
-  //  int path_length = strlen(p->path);
-  //  char sp[path_length + 4];
-  //  memcpy(sp, p->path, path_length);
-  //  sp[path_length + 4] = '\0';
-  //  sp[path_length + 3] = 'm';
-  //  sp[path_length + 2] = 'h';
-  //  sp[path_length + 1] = 's';
-  //  sp[path_length] = '-';
-  //  //memcpy(p->shm_path, sp, path_length+4);
-  //  //p->shm_path = &sp[0];
-  //}
-  //printf("%s\n", p->shm_path);
-
-  //printf("map_pmem_wal%s\t%li\n",sp, size);
 
   const char *sp = "/mnt/pmem0/scheinost/database.db-shm";
 
@@ -571,7 +569,12 @@ static int pmem_open_shm(Persistent_File *p, size_t size){
     size = SHM_BASE_SIZE;
   }
   else{
-    size = st.st_size;
+    if(size < st.st_size){
+      size = st.st_size;
+    }
+  }
+  if(size > PMEM_MAX_LEN){
+    size = PMEM_MAX_LEN;
   }
 
   // 666 = rw-rw-rw
@@ -608,7 +611,7 @@ static int pmem_map_shm(
   void volatile **pp              /* OUT: Mapped memory */
 ){
   Persistent_File *p = (Persistent_File*)pFile;
-  // // printf("shm-map\n");
+  //printf("Mapped-shm with: %i size %i number\n", region_size, region_number);
 
   /** 
    * if file was not allocated and extending is allowed, allocate the file
@@ -623,11 +626,16 @@ static int pmem_map_shm(
     return SQLITE_OK;
     } 
   }
-
-  while(p->shm_size < region_size * region_number){
+  int number_region = region_number +1;
+  while(p->shm_size < region_size * number_region){
+    //printf("extended shm to: %li\n", p->shm_size * GROW_FACTOR_FILE);
     pmem_open_shm(p, p->shm_size * GROW_FACTOR_FILE);
   }
-  *pp = (volatile void**)p->shm_file + (region_number*region_size);
+  *pp = &((char*)p->shm_file)[region_number*region_size];
+
+  if(region_size * number_region > p->used_size){
+    p->shm_used_size = region_size * number_region;
+  }
 
   //if(p->shm < region_size * region_number){
   //  p->used_size = offset + buffer_size;
@@ -638,7 +646,7 @@ static int pmem_map_shm(
 /**
  * no locking in this vfs
 */
-inline static int unixShmLock(
+inline static int pmem_shm_lock(
   sqlite3_file *fd,          /* Database file holding the shared memory */
   int ofst,                  /* First lock to acquire or release */
   int n,                     /* Number of locks to acquire or release */
@@ -780,7 +788,7 @@ static int pmem_open(
     pmem_sector_size,               /* xSectorSize */
     pmem_device_characteristics,     /* xDeviceCharacteristics */
     pmem_map_shm,                     /* xShmMap */
-    unixShmLock,                /* xShmLock */
+    pmem_shm_lock,                /* xShmLock */
     pmem_shm_barrier,             /* xShmBarrier */
     pmem_shm_unmap,               /* xShmUnmap */
     pmem_fetch,                  /* xFetch */
@@ -803,7 +811,6 @@ static int pmem_open(
 // printf("OPEN_FLAGS:\t%i\n", flags);
 
   p->is_wal = flags & SQLITE_OPEN_WAL;
-
   if(p->is_wal){
     p->path = "/mnt/pmem0/scheinost/database.db-wal";
   }
