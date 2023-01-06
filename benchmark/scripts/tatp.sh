@@ -27,7 +27,7 @@ for sf in 10000 100000 1000000 10000000; do
           # eval "$command"
       done
     #done
-    # rm $path*
+    rm $path*
     if [ "$pm" = "wal-only" ]
     then
       rm /mnt/pmem0/scheinost/database.db-wal

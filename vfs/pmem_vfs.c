@@ -122,6 +122,11 @@
 
 #include "../sqlite/sqlite3.h"
 
+// 2^30 ~ 1GB
+u_int64_t PMEM_MAX_LEN = 1 << 35;
+// #ifndef PMEM_MAX_LEN
+// #define PMEM_MAX_LEN ((off_t)(1 << 31))
+// #endif
 
 /**
  * forward declerations
@@ -376,9 +381,9 @@ int map_pmem(Persistent_File* p, size_t new_size){
   if(p->pmem_size == new_size){
     return SQLITE_OK;
   }
-  if(new_size > PMEM_MAX_LEN){
-    new_size = PMEM_MAX_LEN;
-  }
+  // if(new_size > PMEM_MAX_LEN){
+  //   new_size = PMEM_MAX_LEN;
+  // }
 
   p->pmem_file = (char *)pmem_map_file(p->path, new_size, PMEM_FILE_CREATE, 0666, &p->pmem_size, &p->is_pmem);
   return SQLITE_OK;
@@ -455,6 +460,7 @@ static int pmem_write (
       pmem_msync(&((char*)p->pmem_file)[offset], buffer_size);
   }
   
+  //memcpy(&((char*)p->pmem_file)[offset], buffer, buffer_size);
 
   if(offset + buffer_size > p->used_size){
     p->used_size = offset + buffer_size;
@@ -485,12 +491,12 @@ static int pmem_sync(sqlite3_file *pFile, int flags){
     return SQLITE_OK;
   }
 
-  if(p->is_pmem){
-    pmem_persist(p->pmem_file, p->pmem_size);
-  }
-  else{
-    pmem_msync(p->pmem_file, p->pmem_size);
-  }
+  // if(p->is_pmem){
+  //   pmem_persist(p->pmem_file, p->pmem_size);
+  // }
+  // else{
+  //   pmem_msync(p->pmem_file, p->pmem_size);
+  // }
   return SQLITE_OK;
 }
 
@@ -588,9 +594,9 @@ static int pmem_open_shm(Persistent_File *p, size_t size){
       size = st.st_size;
     }
   }
-  if(size > PMEM_MAX_LEN){
-    size = PMEM_MAX_LEN;
-  }
+  // if(size > PMEM_MAX_LEN){
+  //   size = PMEM_MAX_LEN;
+  // }
 
   // 666 = rw-rw-rw
   if ((p->shm_file = (char *)pmem_map_file(sp, size, PMEM_FILE_CREATE,0666, &p->shm_size, &p->shm_is_pmem)) == NULL) {

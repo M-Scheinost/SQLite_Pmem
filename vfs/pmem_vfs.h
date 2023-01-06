@@ -15,6 +15,7 @@
 #include <time.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <stdint.h>
 
 typedef u_int64_t u64;
 typedef u_int32_t u32;
@@ -46,10 +47,10 @@ typedef int8_t i8;
 # define PMEM_LEN ((off_t)(1 << 13))
 #endif
 
-// 2^30 ~ 1GB
-#ifndef PMEM_MAX_LEN
-#define PMEM_MAX_LEN ((off_t)(1 << 31))
-#endif
+//// 2^30 ~ 1GB
+//#ifndef PMEM_MAX_LEN
+//#define PMEM_MAX_LEN ((off_t)(1 << 31))
+//#endif
 
 /*
 ** The maximum pathname length supported by this VFS.

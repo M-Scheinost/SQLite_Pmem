@@ -321,3 +321,50 @@
 "Loading","benchmark.db","100000","false","1929","ms"
 "Loading","/mnt/pmem0/scheinost/benchmark.db","100000","true","5723","ms"
 "Loading","benchmark.db","100000","pmem-nvme","5567","ms"
+#########################################
+		new test run
+#########################################
+"Loading","/mnt/pmem0/scheinost/benchmark.db","10000","true","486","ms"
+"Loading","benchmark.db","10000","false","165","ms"
+"Loading","/mnt/pmem0/scheinost/benchmark.db","10000","true","469","ms"
+"Loading","benchmark.db","10000","pmem-nvme","507","ms"
+"Loading","/mnt/pmem0/scheinost/benchmark.db","100000","true","5721","ms"
+"Loading","benchmark.db","100000","false","1822","ms"
+"Loading","/mnt/pmem0/scheinost/benchmark.db","100000","true","5698","ms"
+"Loading","benchmark.db","100000","pmem-nvme","5675","ms"
+"Loading","/mnt/pmem0/scheinost/benchmark.db","1000000","true","59495","ms"
+"Loading","benchmark.db","1000000","false","18968","ms"
+#########################################
+		new test run
+#########################################
+"Loading","/mnt/pmem0/scheinost/benchmark.db","10000","true","509","ms"
+"Loading","benchmark.db","10000","false","166","ms"
+"Loading","benchmark.db","10000","wal-only","475","ms"
+"Loading","benchmark.db","10000","pmem-nvme","486","ms"
+"Loading","/mnt/pmem0/scheinost/benchmark.db","100000","true","5708","ms"
+"Loading","benchmark.db","100000","false","1828","ms"
+"Loading","benchmark.db","100000","wal-only","5530","ms"
+"Loading","benchmark.db","100000","pmem-nvme","5699","ms"
+"Loading","/mnt/pmem0/scheinost/benchmark.db","1000000","true","59434","ms"
+"Loading","benchmark.db","1000000","false","19709","ms"
+"Loading","benchmark.db","1000000","wal-only","61934","ms"
+"Loading","benchmark.db","1000000","pmem-nvme","58677","ms"
+#########################################
+		new test run
+#########################################
+"Loading","/mnt/pmem0/scheinost/benchmark.db","10000","true","150","ms"
+"Loading","benchmark.db","10000","false","162","ms"
+"Loading","benchmark.db","10000","wal-only","473","ms"
+"Loading","benchmark.db","10000","pmem-nvme","150","ms"
+"Loading","/mnt/pmem0/scheinost/benchmark.db","100000","true","1555","ms"
+"Loading","benchmark.db","100000","false","1778","ms"
+"Loading","benchmark.db","100000","wal-only","5667","ms"
+"Loading","benchmark.db","100000","pmem-nvme","1573","ms"
+"Loading","/mnt/pmem0/scheinost/benchmark.db","1000000","true","15817","ms"
+"Loading","benchmark.db","1000000","false","18821","ms"
+"Loading","benchmark.db","1000000","wal-only","59927","ms"
+"Loading","benchmark.db","1000000","pmem-nvme","16757","ms"
+
+#########################################
+		new test run LOADING TIMES PMEMPERSIST IN WRITE FUNCTION
+#########################################
