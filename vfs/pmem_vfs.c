@@ -443,7 +443,13 @@ static int pmem_write (
       /* automatically flushes data to pmem no extra call needed*/
       //pmem_memcpy(p->pmem_file + offset, buffer, buffer_size, PMEM_F_MEM_NONTEMPORAL);
   
-  memcpy(&((char*)p->pmem_file)[offset], buffer, buffer_size);
+  if(p->is_pmem && !p->is_wal){
+      pmem_memcpy(&((char*)p->pmem_file)[offset], buffer, buffer_size, 0);
+  }
+  else{
+    memcpy(&((char*)p->pmem_file)[offset], buffer, buffer_size);
+  }
+  
 
   if(offset + buffer_size > p->used_size){
     p->used_size = offset + buffer_size;
@@ -469,6 +475,10 @@ static int pmem_truncate(sqlite3_file *pFile, sqlite_int64 size){
 static int pmem_sync(sqlite3_file *pFile, int flags){
   // // printf("pmem sync\n");
   Persistent_File *p = (Persistent_File*)pFile;
+
+  if(p->is_pmem && !p->is_wal){
+    return SQLITE_OK;
+  }
 
   if(p->is_pmem){
     pmem_persist(p->pmem_file, p->pmem_size);
@@ -524,7 +534,7 @@ static int pmem_file_control(sqlite3_file *pFile, int op, void *pArg){
 */
 static int pmem_sector_size(sqlite3_file *pFile){
   /* 4096 is standard unix sector size*/
-  return 256;
+  return 4096;
 }
 static int pmem_device_characteristics(sqlite3_file *pFile){
   // // printf("device characteristics\n");

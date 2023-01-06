@@ -1,8 +1,9 @@
 #!/bin/bash
 
+printf "#########################################\n\t\tnew test run\n#########################################\n" >> /home/scheinost/SQLite_Pmem/results.csv
 
 for sf in 10000 100000 500000 1000000 2000000; do
-  for pm in "wal-only" "false" "true"; do
+  for pm in "true" "false" "true" "pmem-nvme"; do
     printf "*** TATP (scale factor $sf ) ***\n"
     path=""
     if [ "$pm" = "true" ]

@@ -124,7 +124,11 @@ public:
             },
 
             [&](const dbbench::tatp::UpdateLocation &p) {
+              
               int rc;
+              rc = sqlite3_exec(db, "BEGIN DEFERRED;", NULL,NULL,NULL);
+              if(rc){cout << "Transition_6 init "<< rc << endl;}
+
               sqlite3_stmt *stmnt = stmts_[5];
               rc = sqlite3_bind_int64(stmnt, 1, (sqlite3_int64)p.vlr_location);
               if(rc){cout << "Transition_5 bind "<< rc << endl;}
@@ -132,6 +136,9 @@ public:
               if(rc){cout << "Transition_5 bind "<< rc << endl;}
               rc = step_single(stmnt);
               if(rc){cout << "Transition_5 step "<< rc << endl;}
+
+              rc = sqlite3_exec(db, "COMMIT;", NULL,NULL,NULL);
+              if(rc){cout << "Transition_6 commit "<< rc << endl;}
 
               return true;
             },
@@ -369,7 +376,7 @@ sqlite3* open_db(const char* path, string pmem){
   sqlite3 *db;
   int status;
   int flags = SQLITE_OPEN_CREATE | SQLITE_OPEN_READWRITE;
-  if(pmem == "true"){
+  if(pmem == "true" || pmem == "pmem-nvme"){
     sqlite3_vfs_register(sqlite3_pmem_vfs(), 0);
     status = sqlite3_open_v2(path, &db, flags, "PMem_VFS");
   }
