@@ -450,17 +450,17 @@ static int pmem_write (
       /* automatically flushes data to pmem no extra call needed*/
       //pmem_memcpy(p->pmem_file + offset, buffer, buffer_size, PMEM_F_MEM_NONTEMPORAL);
   
-  // if(p->is_pmem){
-  //     //pmem_memcpy(&((char*)p->pmem_file)[offset],buffer, buffer_size, 0);
-  //     memcpy(&((char*)p->pmem_file)[offset], buffer, buffer_size);
-  //     pmem_persist(&((char*)p->pmem_file)[offset],buffer_size);
-  // }
-  // else{
-  //     memcpy(&((char*)p->pmem_file)[offset], buffer, buffer_size);
-  //     pmem_msync(&((char*)p->pmem_file)[offset], buffer_size);
-  // }
+  if(p->is_pmem){
+      //pmem_memcpy(&((char*)p->pmem_file)[offset],buffer, buffer_size, 0);
+      memcpy(&((char*)p->pmem_file)[offset], buffer, buffer_size);
+      pmem_persist(&((char*)p->pmem_file)[offset],buffer_size);
+  }
+  else{
+      memcpy(&((char*)p->pmem_file)[offset], buffer, buffer_size);
+      pmem_msync(&((char*)p->pmem_file)[offset], buffer_size);
+  }
   
-  memcpy(&((char*)p->pmem_file)[offset], buffer, buffer_size);
+  // memcpy(&((char*)p->pmem_file)[offset], buffer, buffer_size);
 
   if(offset + buffer_size > p->used_size){
     p->used_size = offset + buffer_size;
@@ -491,12 +491,13 @@ static int pmem_sync(sqlite3_file *pFile, int flags){
     return SQLITE_OK;
   }
 
-  if(p->is_pmem){
-    pmem_persist(p->pmem_file, p->pmem_size);
-  }
-  else{
-    pmem_msync(p->pmem_file, p->pmem_size);
-  }
+  // if(p->is_pmem){
+  //   pmem_persist(p->pmem_file, p->pmem_size);
+  // }
+  // else{
+  //   pmem_msync(p->pmem_file, p->pmem_size);
+  // }
+  
   return SQLITE_OK;
 }
 
