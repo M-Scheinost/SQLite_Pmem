@@ -49,13 +49,13 @@ public:
           if(rc){cout << "Prepare transaction_"<< i << "\t" << rc << endl;}
           stmts_.push_back(stmt);
         }
-        for(int i = 0; i < 5000000; i++){
+        for(int i = 0; i < 50000000; i++){
           next_value.push_back(procedure_generator_.next());
         }
   }
 
   bool operator()() {
-    if(index >= 1000000){
+    if(index >= 50000000){
       index = 0;
     }
     return std::visit(

@@ -538,3 +538,40 @@
 "Benchmark","benchmark.db","10000000","pmem-nvme","12000.4","tps"
 "Benchmark","benchmark.db","10000000","pmem-nvme","12014","tps"
 "Benchmark","benchmark.db","10000000","pmem-nvme","11996.4","tps"
+#########################################
+		new test run
+#########################################
+"Loading","/mnt/pmem0/scheinost/benchmark.db","10000","true","463","ms"
+"Benchmark","/mnt/pmem0/scheinost/benchmark.db","10000","true","484698","tps"
+"Benchmark","/mnt/pmem0/scheinost/benchmark.db","10000","true","491744","tps"
+"Benchmark","/mnt/pmem0/scheinost/benchmark.db","10000","true","493929","tps"
+#########################################
+		new test run
+#########################################
+"Loading","/mnt/pmem0/scheinost/benchmark.db","10000","true","506","ms"
+#########################################
+		new test run
+#########################################
+"Loading","/mnt/pmem0/scheinost/benchmark.db","10000","true","153","ms"
+"Benchmark","/mnt/pmem0/scheinost/benchmark.db","10000","true","503446","tps"
+"Benchmark","/mnt/pmem0/scheinost/benchmark.db","10000","true","521570","tps"
+"Benchmark","/mnt/pmem0/scheinost/benchmark.db","10000","true","0","tps"
+"Loading","benchmark.db","10000","false","170","ms"
+"Benchmark","benchmark.db","10000","false","216982","tps"
+"Benchmark","benchmark.db","10000","false","491494","tps"
+"Benchmark","benchmark.db","10000","false","220520","tps"
+"Loading","benchmark.db","10000","wal-only","150","ms"
+"Benchmark","benchmark.db","10000","wal-only","535029","tps"
+"Benchmark","benchmark.db","10000","wal-only","530917","tps"
+"Benchmark","benchmark.db","10000","wal-only","286148","tps"
+"Loading","benchmark.db","10000","pmem-nvme","151","ms"
+"Benchmark","benchmark.db","10000","pmem-nvme","278786","tps"
+"Benchmark","benchmark.db","10000","pmem-nvme","283640","tps"
+"Benchmark","benchmark.db","10000","pmem-nvme","0","tps"
+"Loading","/mnt/pmem0/scheinost/benchmark.db","100000","true","1551","ms"
+"Benchmark","/mnt/pmem0/scheinost/benchmark.db","100000","true","0","tps"
+"Benchmark","/mnt/pmem0/scheinost/benchmark.db","100000","true","523138","tps"
+"Benchmark","/mnt/pmem0/scheinost/benchmark.db","100000","true","510139","tps"
+"Loading","benchmark.db","100000","false","1835","ms"
+"Benchmark","benchmark.db","100000","false","439032","tps"
+"Benchmark","benchmark.db","100000","false","412474","tps"

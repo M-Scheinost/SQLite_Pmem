@@ -1,11 +1,11 @@
 
 printf "#########################################\n\t\tnew test run\n#########################################\n" >> /home/scheinost/SQLite_Pmem/results.csv
 
-#for sf in 10000 100000 1000000 10000000; do
-for sf in 10000; do
-  #for pm in "true" "false" "wal-only" "pmem-nvme"; do
+for sf in 10000 100000 1000000 10000000; do
+#for sf in 10000; do
+  for pm in "true" "false" "wal-only" "pmem-nvme"; do
   #for pm in "true" "wal-only" "pmem-nvme"; do
-  for pm in "true"; do
+  #for pm in "true"; do
     printf "*** TATP (scale factor $sf ) ***\n"
     path=""
     if [ "$pm" = "true" ]
