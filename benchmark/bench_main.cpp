@@ -49,15 +49,15 @@ public:
           if(rc){cout << "Prepare transaction_"<< i << "\t" << rc << endl;}
           stmts_.push_back(stmt);
         }
-        for(int i = 0; i < 50000000; i++){
-          next_value.push_back(procedure_generator_.next());
-        }
+        //for(int i = 0; i < 500000000; i++){
+        //  next_value.push_back(procedure_generator_.next());
+        //}
   }
 
   bool operator()() {
-    if(index >= 50000000){
-      index = 0;
-    }
+    //if(index >= 500000000){
+    //  index = 0;
+    //}
     return std::visit(
         overloaded{
             [&](const dbbench::tatp::GetSubscriberData &p) {
@@ -233,7 +233,8 @@ public:
               return sqlite3_changes(db) > 0;
             },
         },
-        next_value[index]);
+        //next_value[index]);
+        procedure_generator_.next());
   }
 
 private:
@@ -387,20 +388,26 @@ void load_db_1(sqlite3 *db, size_t db_size){
 
 sqlite3* open_db(const char* path, string pmem){
   sqlite3 *db;
-  int status;
+  int rc;
   int flags = SQLITE_OPEN_CREATE | SQLITE_OPEN_READWRITE;
   if(pmem == "true" || pmem == "pmem-nvme"){
     sqlite3_vfs_register(sqlite3_pmem_vfs(), 0);
-    status = sqlite3_open_v2(path, &db, flags, "PMem_VFS");
+    rc = sqlite3_open_v2(path, &db, flags, "PMem_VFS");
   }
   else if(pmem == "wal-only"){
     sqlite3_vfs_register(sqlite3_pmem_wal_only_vfs(), 0);
-    status = sqlite3_open_v2(path, &db, flags, "PMem_VFS_wal_only");
+    rc = sqlite3_open_v2(path, &db, flags, "PMem_VFS_wal_only");
   }
   else{
-    status = sqlite3_open_v2(path, &db, flags, "unix");
+    rc = sqlite3_open_v2(path, &db, flags, "unix");
   }
-  if(status){cout <<"Open:\t" << status << endl;}
+  if(rc){cout <<"Open:\t" << rc << endl;}
+  rc = sqlite3_exec(db,"PRAGMA journal_mode=WAL", NULL,NULL,NULL);
+  if(rc){cout << "Pragma WAL not working: " << rc << endl;}
+  rc = sqlite3_exec(db,"PRAGMA synchronous=FULL", NULL,NULL,NULL);
+  if(rc){cout << "Pragma WAL not working: " << rc << endl;}
+
+
   return db;
 }
 
@@ -451,12 +458,6 @@ int main (int argc, char** argv){
     int rc;
     std::vector<Worker> workers;
     sqlite3 *db = open_db(path.c_str(), pmem);
-    //rc = sqlite3_exec(db,"PRAGMA journal_mode=TRUNCATE", NULL,NULL,NULL);
-    rc = sqlite3_exec(db,"PRAGMA journal_mode=WAL", NULL,NULL,NULL);
-    if(rc){cout << "Pragma WAL not working: " << rc << endl;}
-    string cs = "PRAGMA cache_size=" + cache_size;
-    rc = sqlite3_exec(db,cs.c_str(), NULL,NULL,NULL);
-    if(rc){cout << "Pragma cache size not working: " << rc << endl;}
 
     workers.emplace_back(db, n_subscriber_records);
 
