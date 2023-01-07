@@ -37,8 +37,8 @@ int step_single(sqlite3_stmt *stmt){
 
 class Worker {
 public:
-  Worker(sqlite3 *db_, size_t db_size) : db(db_), procedure_generator_(db_size) {
-
+  Worker(sqlite3 *db_, size_t db_size,vector<dbbench::tatp::Procedure> next_val ) : db(db_), procedure_generator_(db_size), next_values(next_val) {
+        index = 0;
         int rc;
         vector<string> sql = tatp_transactions();
         for(int i = 0; i< 10; i++){
@@ -47,9 +47,13 @@ public:
           if(rc){cout << "Prepare transaction_"<< i << "\t" << rc << endl;}
           stmts_.push_back(stmt);
         }
+       
   }
 
   bool operator()() {
+    if(index >= 100000){
+      index = 0;
+    } 
     return std::visit(
         overloaded{
             [&](const dbbench::tatp::GetSubscriberData &p) {
@@ -225,7 +229,7 @@ public:
               return sqlite3_changes(db) > 0;
             },
         },
-        procedure_generator_.next());
+        next_values[index++]);
   }
 
 private:
@@ -233,6 +237,8 @@ private:
   size_t db_size;
   std::vector<sqlite3_stmt*> stmts_;
   dbbench::tatp::ProcedureGenerator procedure_generator_;
+  vector<dbbench::tatp::Procedure> next_values;
+  size_t index;
 };
 
 
@@ -423,8 +429,11 @@ int main (int argc, char** argv){
   string path = result["path"].as<std::string>();
   string pmem = result["pmem"].as<string>();
 
-  if (result.count("load")) {
-    sqlite3 *db = open_db(path.c_str(), pmem);
+
+  vector<string> pmem_modes {"true", "false", "wal-only", "pmem-nvme"};
+
+  for(auto &mod : pmem_modes){
+      sqlite3 *db = open_db(path.c_str(), pmem);
     auto start = chrono::steady_clock::now();
     // for(int i = 0; i < n_subscriber_records/10000; i++){
        load_db_1(db, n_subscriber_records);
@@ -432,31 +441,37 @@ int main (int argc, char** argv){
     auto end = chrono::steady_clock::now();
     auto time = chrono::duration_cast<chrono::milliseconds>(end - start).count();
     close_db(db);
-    
+
     ofstream result_file {"/home/scheinost/SQLite_Pmem/results.csv", ios::app};
     result_file <<"\"Loading\",\"" << path << "\",\""<< n_subscriber_records << "\",\"" << pmem << "\",\"" << time << "\",\"ms\"" << endl;
+    vector<dbbench::tatp::Procedure> next_values;
+    dbbench::tatp::ProcedureGenerator procedure_generator_ {n_subscriber_records};
+    for(int i = 0; i < 100000; i++){
+      next_values.push_back(procedure_generator_.next());
+    }
+ 
+    for(int wiederholungen = 0; wiederholungen < 3; wiederholungen++){
+      int rc;
+      std::vector<Worker> workers;
+      sqlite3 *db = open_db(path.c_str(), pmem);
+      //rc = sqlite3_exec(db,"PRAGMA journal_mode=TRUNCATE", NULL,NULL,NULL);
+      rc = sqlite3_exec(db,"PRAGMA journal_mode=WAL", NULL,NULL,NULL);
+      if(rc){cout << "Pragma WAL not working: " << rc << endl;}
+      string cs = "PRAGMA cache_size=" + cache_size;
+      rc = sqlite3_exec(db,cs.c_str(), NULL,NULL,NULL);
+      if(rc){cout << "Pragma cache size not working: " << rc << endl;}
+
+      workers.emplace_back(db, n_subscriber_records, next_values);
+
+      double throughput = dbbench::run(workers, result["warmup"].as<size_t>(),result["measure"].as<size_t>());
+      std::cout << throughput << std::endl;
+      close_db(db);
+
+      ofstream result_file {"/home/scheinost/SQLite_Pmem/results.csv", ios::app};
+
+      result_file <<"\"Benchmark\",\"" << path << "\",\""<< n_subscriber_records << "\",\"" << pmem << "\",\"" << throughput << "\",\"tps\"" << endl;
+    }
   }
-
-  if (result.count("run")) {
-    int rc;
-    std::vector<Worker> workers;
-    sqlite3 *db = open_db(path.c_str(), pmem);
-    //rc = sqlite3_exec(db,"PRAGMA journal_mode=TRUNCATE", NULL,NULL,NULL);
-    rc = sqlite3_exec(db,"PRAGMA journal_mode=WAL", NULL,NULL,NULL);
-    if(rc){cout << "Pragma WAL not working: " << rc << endl;}
-    string cs = "PRAGMA cache_size=" + cache_size;
-    rc = sqlite3_exec(db,cs.c_str(), NULL,NULL,NULL);
-    if(rc){cout << "Pragma cache size not working: " << rc << endl;}
-
-    workers.emplace_back(db, n_subscriber_records);
-
-    double throughput = dbbench::run(workers, result["warmup"].as<size_t>(),result["measure"].as<size_t>());
-    std::cout << throughput << std::endl;
-    close_db(db);
-
-    ofstream result_file {"/home/scheinost/SQLite_Pmem/results.csv", ios::app};
-
-    result_file <<"\"Benchmark\",\"" << path << "\",\""<< n_subscriber_records << "\",\"" << pmem << "\",\"" << throughput << "\",\"tps\"" << endl;
-  }
+  
   return 0;
 }
