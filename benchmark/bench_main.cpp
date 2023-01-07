@@ -6,11 +6,13 @@
 #include "cxxopts.hpp"
 #include <fstream>
 #include <chrono>
+#include <filesystem>
 
 #include "../vfs/pmem_vfs.h"
 #include "../vfs/pmem_wal_only_vfs.h"
 
 using namespace std;
+namespace fs = std::filesystem;
 template <class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
 template <class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
 
@@ -432,8 +434,21 @@ int main (int argc, char** argv){
 
   vector<string> pmem_modes {"true", "false", "wal-only", "pmem-nvme"};
 
-  for(auto &mod : pmem_modes){
-      sqlite3 *db = open_db(path.c_str(), pmem);
+  vector<dbbench::tatp::Procedure> next_values;
+  dbbench::tatp::ProcedureGenerator procedure_generator_ {n_subscriber_records};
+  for(int i = 0; i < 10000000; i++){
+    next_values.push_back(procedure_generator_.next());
+  }
+
+  for(auto &mode : pmem_modes){
+    if(mode == "true"){
+      path = "/mnt/pmem0/scheinost/benchmark.db";
+    }
+    else{
+      path = "benchmark.db";
+    }
+
+    sqlite3 *db = open_db(path.c_str(), mode);
     auto start = chrono::steady_clock::now();
     // for(int i = 0; i < n_subscriber_records/10000; i++){
        load_db_1(db, n_subscriber_records);
@@ -444,11 +459,7 @@ int main (int argc, char** argv){
 
     ofstream result_file {"/home/scheinost/SQLite_Pmem/results.csv", ios::app};
     result_file <<"\"Loading\",\"" << path << "\",\""<< n_subscriber_records << "\",\"" << pmem << "\",\"" << time << "\",\"ms\"" << endl;
-    vector<dbbench::tatp::Procedure> next_values;
-    dbbench::tatp::ProcedureGenerator procedure_generator_ {n_subscriber_records};
-    for(int i = 0; i < 100000; i++){
-      next_values.push_back(procedure_generator_.next());
-    }
+   
  
     for(int wiederholungen = 0; wiederholungen < 3; wiederholungen++){
       int rc;
@@ -470,6 +481,17 @@ int main (int argc, char** argv){
       ofstream result_file {"/home/scheinost/SQLite_Pmem/results.csv", ios::app};
 
       result_file <<"\"Benchmark\",\"" << path << "\",\""<< n_subscriber_records << "\",\"" << pmem << "\",\"" << throughput << "\",\"tps\"" << endl;
+      
+      fs::path database = path;
+      fs::path wal = path +"-wal";
+      fs::path shm = path +"-shm";
+      if(mode == "wal-only"){
+        wal = "/mnt/pmem0/scheinost/benchmark.db-wal";
+        shm = "/mnt/pmem0/scheinost/benchmark.db-shm";
+      }
+      fs::remove(database);
+      fs::remove(wal);
+      fs::remove(shm);
     }
   }
   
