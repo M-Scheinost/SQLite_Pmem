@@ -379,8 +379,12 @@ int map_pmem_wal(Persistent_File* p, size_t new_size){
   // if(new_size > PMEM_MAX_LEN){
   //   new_size = PMEM_MAX_LEN;
   // }
-
-  p->pmem_file = (char *)pmem_map_file(p->path, new_size, PMEM_FILE_CREATE, 0666, &p->pmem_size, &p->is_pmem);
+  if(p->is_pmem){
+    p->pmem_file = (char *)pmem_map_file(p->path, new_size, PMEM_FILE_CREATE, 0666, &p->pmem_size, &p->is_pmem);
+  }
+  else{
+    p->pmem_file = mmap(NULL, new_size,PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0);
+  }
   return SQLITE_OK;
 }
 

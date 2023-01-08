@@ -49,15 +49,17 @@ public:
           if(rc){cout << "Prepare transaction_"<< i << "\t" << rc << endl;}
           stmts_.push_back(stmt);
         }
-        //for(int i = 0; i < 500000000; i++){
-        //  next_value.push_back(procedure_generator_.next());
-        //}
+        for(int i = 0; i < 5000000; i++){
+          next_value.push_back(procedure_generator_.next());
+        }
+        index = 0;
   }
 
   bool operator()() {
-    //if(index >= 500000000){
-    //  index = 0;
-    //}
+    if(index >= next_value.size()){
+      index = 0;
+    }
+    //cout << index << endl;
     return std::visit(
         overloaded{
             [&](const dbbench::tatp::GetSubscriberData &p) {
@@ -233,8 +235,10 @@ public:
               return sqlite3_changes(db) > 0;
             },
         },
-        //next_value[index]);
-        procedure_generator_.next());
+        next_value[index++]);
+        //index++;
+        //cout << index << endl;
+        //procedure_generator_.next());
   }
 
 private:
@@ -443,9 +447,7 @@ int main (int argc, char** argv){
   if (result.count("load")) {
     sqlite3 *db = open_db(path.c_str(), pmem);
     auto start = chrono::steady_clock::now();
-    // for(int i = 0; i < n_subscriber_records/10000; i++){
-       load_db_1(db, n_subscriber_records);
-    //}
+    load_db_1(db, n_subscriber_records);
     auto end = chrono::steady_clock::now();
     auto time = chrono::duration_cast<chrono::milliseconds>(end - start).count();
     close_db(db);

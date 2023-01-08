@@ -3,7 +3,8 @@ printf "#########################################\n\t\tnew test run\n###########
 
 for sf in 10000 100000 1000000 10000000; do
 #for sf in 10000; do
-  for pm in "true" "false" "wal-only" "pmem-nvme"; do
+  #for pm in "true" "false" "wal-only" "pmem-nvme"; do
+  for pm in "true" "false"; do
   #for pm in "true" "wal-only" "pmem-nvme"; do
   #for pm in "true"; do
     printf "*** TATP (scale factor $sf ) ***\n"
@@ -29,7 +30,7 @@ for sf in 10000 100000 1000000 10000000; do
           eval "$command"
       done
     #done
-    #rm $path*
+    rm $path*
     if [ "$pm" = "wal-only" ]
     then
       rm /mnt/pmem0/scheinost/database.db-wal
