@@ -728,51 +728,6 @@
 "Benchmark","benchmark.db","10000000","pmem-nvme","38359","tps"
 #########################################
 		new test run SYNC=FULL TRANSACTIONS PRECOMPUTED
-##################################################################################
-		new test run
-#########################################
-"Loading","/mnt/pmem0/scheinost/benchmark.db","10000","true","156","ms"
-"Benchmark","/mnt/pmem0/scheinost/benchmark.db","10000","true","279347","tps"
-"Benchmark","/mnt/pmem0/scheinost/benchmark.db","10000","true","460676","tps"
-"Benchmark","/mnt/pmem0/scheinost/benchmark.db","10000","true","467246","tps"
-"Loading","benchmark.db","10000","false","172","ms"
-"Benchmark","benchmark.db","10000","false","0","tps"
-"Benchmark","benchmark.db","10000","false","0","tps"
-"Benchmark","benchmark.db","10000","false","405720","tps"
-"Loading","benchmark.db","10000","wal-only","148","ms"
-#########################################
-		new test run
-#########################################
-"Loading","/mnt/pmem0/scheinost/benchmark.db","10000","true","148","ms"
-#########################################
-		new test run
-#########################################
-"Loading","/mnt/pmem0/scheinost/benchmark.db","10000","true","149","ms"
-#########################################
-		new test run
-#########################################
-"Loading","/mnt/pmem0/scheinost/benchmark.db","10000","true","149","ms"
-#########################################
-		new test run
-#########################################
-"Loading","/mnt/pmem0/scheinost/benchmark.db","10000","true","149","ms"
-#########################################
-		new test run
-#########################################
-"Loading","/mnt/pmem0/scheinost/benchmark.db","10000","true","148","ms"
-"Benchmark","/mnt/pmem0/scheinost/benchmark.db","10000","true","24799.4","tps"
-"Benchmark","/mnt/pmem0/scheinost/benchmark.db","10000","true","21398.2","tps"
-#########################################
-		new test run
-#########################################
-"Loading","/mnt/pmem0/scheinost/benchmark.db","10000","true","149","ms"
-"Benchmark","/mnt/pmem0/scheinost/benchmark.db","10000","true","52546.1","tps"
-"Benchmark","/mnt/pmem0/scheinost/benchmark.db","10000","true","52517.3","tps"
-"Benchmark","/mnt/pmem0/scheinost/benchmark.db","10000","true","52750.7","tps"
-"Loading","benchmark.db","10000","false","168","ms"
-"Benchmark","benchmark.db","10000","false","42596.1","tps"
-#########################################
-		new test run SYNC=FULL TRANSACTIONS PRECOMPUTED
 #########################################
 #########################################
 		new test run
@@ -979,3 +934,41 @@
 "Benchmark","benchmark.db","10000000","false","32084.6","tps"
 "Benchmark","benchmark.db","10000000","false","31991","tps"
 "Benchmark","benchmark.db","10000000","false","31859.8","tps"
+-----------------------------------------------------------
+##				test run flush in write, sync = full, trans precomputed
+----------------------------------------------------------
+#########################################
+		new test run
+#########################################
+"Loading","/mnt/pmem0/scheinost/benchmark.db","10000","true","504","ms"
+"Benchmark","/mnt/pmem0/scheinost/benchmark.db","10000","true","13648.6","tps"
+"Benchmark","/mnt/pmem0/scheinost/benchmark.db","10000","true","13795.2","tps"
+"Benchmark","/mnt/pmem0/scheinost/benchmark.db","10000","true","13702.7","tps"
+"Loading","benchmark.db","10000","false","160","ms"
+"Benchmark","benchmark.db","10000","false","46879.2","tps"
+"Benchmark","benchmark.db","10000","false","46535.3","tps"
+"Benchmark","benchmark.db","10000","false","46644","tps"
+"Loading","/mnt/pmem0/scheinost/benchmark.db","100000","true","5713","ms"
+"Benchmark","/mnt/pmem0/scheinost/benchmark.db","100000","true","13028.7","tps"
+"Benchmark","/mnt/pmem0/scheinost/benchmark.db","100000","true","13147.3","tps"
+"Benchmark","/mnt/pmem0/scheinost/benchmark.db","100000","true","13211","tps"
+"Loading","benchmark.db","100000","false","1746","ms"
+"Benchmark","benchmark.db","100000","false","41097.5","tps"
+"Benchmark","benchmark.db","100000","false","40677","tps"
+"Benchmark","benchmark.db","100000","false","40848","tps"
+"Loading","/mnt/pmem0/scheinost/benchmark.db","1000000","true","60361","ms"
+"Benchmark","/mnt/pmem0/scheinost/benchmark.db","1000000","true","12575.2","tps"
+"Benchmark","/mnt/pmem0/scheinost/benchmark.db","1000000","true","12528.1","tps"
+"Benchmark","/mnt/pmem0/scheinost/benchmark.db","1000000","true","12551.6","tps"
+"Loading","benchmark.db","1000000","false","17474","ms"
+"Benchmark","benchmark.db","1000000","false","35445.4","tps"
+"Benchmark","benchmark.db","1000000","false","35254.3","tps"
+"Benchmark","benchmark.db","1000000","false","35403.8","tps"
+"Loading","/mnt/pmem0/scheinost/benchmark.db","10000000","true","625972","ms"
+"Benchmark","/mnt/pmem0/scheinost/benchmark.db","10000000","true","12143.5","tps"
+"Benchmark","/mnt/pmem0/scheinost/benchmark.db","10000000","true","12183.9","tps"
+"Benchmark","/mnt/pmem0/scheinost/benchmark.db","10000000","true","12214.3","tps"
+"Loading","benchmark.db","10000000","false","188176","ms"
+"Benchmark","benchmark.db","10000000","false","32016.8","tps"
+"Benchmark","benchmark.db","10000000","false","32039.9","tps"
+"Benchmark","benchmark.db","10000000","false","32077","tps"
