@@ -492,13 +492,11 @@ static int pmem_sync(sqlite3_file *pFile, int flags){
   // }
 
   if(p->is_pmem){
-    pmem_persist(p->pmem_file, p->pmem_size);
+    return pmem_deep_persist(p->pmem_file, p->pmem_size);
   }
   else{
-    pmem_msync(p->pmem_file, p->pmem_size);
+    return pmem_msync(p->pmem_file, p->pmem_size);
   }
-  
-  return SQLITE_OK;
 }
 
 /*
