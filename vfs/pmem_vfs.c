@@ -364,6 +364,7 @@ struct Persistent_File {
   int shm_is_pmem;
   int times_mapped; /* the number of times pmem_fetch was called*/
   char *shm_path;
+  //int write_calls;
 };
 
 
@@ -394,15 +395,17 @@ void unmap_pmem(Persistent_File* p){
   p->pmem_size = 0;
   p->used_size = 0;
   p->pmem_file = 0;
+  p->is_pmem = 0;
 }
 
 
 /*
 */
 static int pmem_close(sqlite3_file *pFile){
-  // // printf("close\n");
   Persistent_File *p = (Persistent_File*)pFile;
-  
+  // printf("sync_calls: %s  %i\n", p->path, p->sync_calls);
+  // printf("write_calls: %s  %i\n", p->path, p->write_calls);
+  //fflush(stdout);
   unmap_pmem(p);
   return SQLITE_OK;
 }
@@ -440,6 +443,8 @@ static int pmem_write (
   sqlite_int64 offset
 ){
   Persistent_File *p = (Persistent_File*)pFile;
+  //p->write_calls++;
+  //printf("%i\n", p->write_calls);
   //printf("try to write %i bytes at offset %lli to %s\n", buffer_size,offset,  p->path);
   assert ( pFile );
   assert( buffer_size > 0);
@@ -472,11 +477,7 @@ static int pmem_write (
 ** Truncate a file. This is a no-op for this VFS (see header comments at
 ** the top of the file).
 */
-static int pmem_truncate(sqlite3_file *pFile, sqlite_int64 size){
-  // // printf("truncate\n");
-#if 0
-  if( ftruncate(((DemoFile *)pFile)->fd, size) ) return SQLITE_IOERR_TRUNCATE;
-#endif
+inline static int pmem_truncate(sqlite3_file *pFile, sqlite_int64 size){
   return SQLITE_OK;
 }
 
@@ -484,13 +485,8 @@ static int pmem_truncate(sqlite3_file *pFile, sqlite_int64 size){
 ** Sync the contents of the file to the persistent media.
 */
 static int pmem_sync(sqlite3_file *pFile, int flags){
-  // // printf("pmem sync\n");
   Persistent_File *p = (Persistent_File*)pFile;
-
-  // if(p->is_pmem && !p->is_wal){
-  //   return SQLITE_OK;
-  // }
-
+  // p->sync_calls++;
   if(p->is_pmem){
     return pmem_deep_persist(p->pmem_file, p->pmem_size);
   }
@@ -532,7 +528,7 @@ inline static int pmem_check_reserved_lock(sqlite3_file *pFile, int *pResOut){
 /*
 ** No xFileControl() verbs are implemented by this VFS.
 */
-static int pmem_file_control(sqlite3_file *pFile, int op, void *pArg){
+inline static int pmem_file_control(sqlite3_file *pFile, int op, void *pArg){
   // // printf("file control\n");
   return SQLITE_NOTFOUND;
 }
@@ -544,9 +540,9 @@ static int pmem_file_control(sqlite3_file *pFile, int op, void *pArg){
 */
 static int pmem_sector_size(sqlite3_file *pFile){
   /* 4096 is standard unix sector size*/
-  return 4096;
+  return 1;
 }
-static int pmem_device_characteristics(sqlite3_file *pFile){
+inline static int pmem_device_characteristics(sqlite3_file *pFile){
   // // printf("device characteristics\n");
   return 0;
 }
