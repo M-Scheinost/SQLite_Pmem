@@ -62,6 +62,8 @@ include_directories(${PROJECT_SOURCE_DIR}/src)
 include(${CMAKE_SOURCE_DIR}/benchmark/local.cmake)
 include(${CMAKE_SOURCE_DIR}/sqlite/local.cmake)
 include(${CMAKE_SOURCE_DIR}/vfs/local.cmake)
+include(${CMAKE_SOURCE_DIR}/duckdb/local.cmake)
+
 
 # target_compile_options(
 #         sqlite
@@ -80,37 +82,6 @@ include(${CMAKE_SOURCE_DIR}/vfs/local.cmake)
 #         -DSQLITE_USE_ALLOCA
 #         -DSQLITE_OMIT_AUTOINIT
 # )
-
-set(SRC_LIB_FILE ${PROJECT_SOURCE_DIR}/sqlite/sqlite${SQLITE_VER_MAJOR}.c)
-set(SRC_SHELL_FILE ${PROJECT_SOURCE_DIR}/sqlite/shell.c)
-set(SRC_TEST_FILE ${PROJECT_SOURCE_DIR}/main.c)
-
-file(GLOB HDR_FILES ${PROJECT_SOURCE_DIR}/sqlite/*.h)
-
-# adding compilation flags depending on options
-if(WITH_SQLITE_DEBUG)
-    add_definitions(-DSQLITE_DEBUG)
-endif()
-if(WITH_SQLITE_MEMDEBUG)
-    add_definitions(-DSQLITE_MEMDEBUG)
-endif()
-if(WITH_SQLITE_RTREE)
-    add_definitions(-DSQLITE_ENABLE_RTREE)
-endif()
-
-if (SQLITE_BUILD_STATIC)
-    # build static library
-    add_library(${SQLITE_STATIC_NAME} STATIC ${SRC_LIB_FILE})
-endif()
-
-if (SQLITE_BUILD_SHARED)
-    # build dynamic library
-    add_library(${SQLITE_DYN_NAME} SHARED ${SRC_LIB_FILE})
-    if (SQLITE_WIN_BUILD)
-        #then we do dll library, so need to export api
-        set_target_properties(${SQLITE_DYN_NAME} PROPERTIES DEFINE_SYMBOL "SQLITE_API=__declspec(dllexport)")
-    endif()
-endif()
 
 #-------------------------------------------
 #       Fetch git stuff
@@ -141,56 +112,63 @@ FetchContent_MakeAvailable(dbbench)
 #   build TATP bench executable
 #----------------------------------------------
 
-add_executable(tatp_bench ${BENCHMARK_MAIN_FILE})
-target_link_libraries(tatp_bench ${BENCHMARK_FILES} ${VFS_FILES} sqlite vfs Threads::Threads dbbench_tatp cxxopts pmem pmemlog dl m)
+add_executable(tatp_bench ${TATP_SQLITE_MAIN_FILE})
+target_link_libraries(tatp_bench ${VFS_FILES} sqlite vfs Threads::Threads dbbench_tatp cxxopts pmem pmemlog dl m)
 set_target_properties(tatp_bench PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/tatp
 )
 
+
+
 #----------------------------------------------
-#   build test executable
+#   build SSB executables.
 #----------------------------------------------
 
-add_executable(test ${SRC_TEST_FILE})
-target_link_libraries(test sqlite vfs Threads::Threads pmem pmemlog dl m)
+add_subdirectory(benchmark/ssb/dbgen)
 
-#----------------------------------
-# build shell executable
-#---------------------------------
-add_executable(shell ${SRC_SHELL_FILE})
+add_executable(ssb_sqlite3 ${SSB_SQLITE_MAIN_FILE})
 
-if (SQLITE_BUILD_SHARED)
-    # preferred is shared library
-    target_link_libraries(shell ${SQLITE_DYN_NAME} ${CMAKE_THREAD_LIBS_INIT} ${CMAKE_DL_LIBS})
-elseif(SQLITE_BUILD_STATIC)
-    target_link_libraries(shell ${SQLITE_STATIC_NAME} ${CMAKE_THREAD_LIBS_INIT} ${CMAKE_DL_LIBS})
-else()
-    # no static or dynamic option selected
-    message(FATAL_ERROR "either static or dynamic option should be selected")
-endif()
+target_link_libraries(ssb_sqlite3 cxxopts sqlite sqlite3cpp)
+set_target_properties(
+        ssb_sqlite3
+        PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/ssb
+)
 
+add_executable(ssb_duckdb ${SSB_DUCKDB_MAIN_FILE})
+target_include_directories(ssb_duckdb PRIVATE src)
+target_link_libraries(ssb_duckdb cxxopts ${CMAKE_DL_LIBS} duckdb)
+set_target_properties(
+        ssb_duckdb
+        PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/ssb
+)
 
+file(COPY benchmark/ssb/sql DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/ssb)
 
-#-------------------------------------------
-#   installation
-#------------------------------------------
-list(APPEND TO_INSTALL shell)
-if(SQLITE_BUILD_SHARED)
-    list(APPEND TO_INSTALL ${SQLITE_DYN_NAME})
-endif()
-if(SQLITE_BUILD_STATIC)
-    list(APPEND TO_INSTALL ${SQLITE_STATIC_NAME})
-endif()
+#----------------------------------------------
+#   build Blob executables.
+#----------------------------------------------
 
-install(TARGETS ${TO_INSTALL}
-        RUNTIME DESTINATION "${INSTALL_BIN_DIR}"
-        ARCHIVE DESTINATION "${INSTALL_LIB_DIR}"
-        LIBRARY DESTINATION "${INSTALL_LIB_DIR}" )
-install(FILES ${HDR_FILES} DESTINATION "${INSTALL_INC_DIR}")
+add_executable(blob_sqlite3 ${BLOB_SQLITE_MAIN_FILE})
+target_include_directories(blob_sqlite3 PRIVATE src src/systems/sqlite)
+target_link_libraries(blob_sqlite3 cxxopts dbbench_core sqlite3 sqlite3cpp)
+set_target_properties(
+        blob_sqlite3
+        PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/blob
+)
 
-
+add_executable(blob_duckdb ${BLOB_DUCKDB_MAIN_FILE})
+target_include_directories(blob_duckdb PRIVATE src)
+target_link_libraries(blob_duckdb cxxopts dbbench_core duckdb)
+set_target_properties(
+        blob_duckdb
+        PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/blob
+)
 
 # Scripts.
-# configure_file(scripts/benchmarks/ssb.sh ${CMAKE_CURRENT_BINARY_DIR}/ssb/ssb.sh COPYONLY)
+configure_file(benchmark/scripts/ssb.sh ${CMAKE_CURRENT_BINARY_DIR}/ssb/ssb.sh COPYONLY)
 configure_file(benchmark/scripts/tatp.sh ${CMAKE_CURRENT_BINARY_DIR}/tatp/tatp.sh COPYONLY)
-# configure_file(scripts/benchmarks/blob.sh ${CMAKE_CURRENT_BINARY_DIR}/blob/blob.sh COPYONLY)
+configure_file(benchmark/scripts/blob.sh ${CMAKE_CURRENT_BINARY_DIR}/blob/blob.sh COPYONLY)
 configure_file(benchmark/scripts/all.sh ${CMAKE_CURRENT_BINARY_DIR}/all.sh COPYONLY)
