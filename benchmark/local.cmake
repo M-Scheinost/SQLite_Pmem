@@ -7,4 +7,4 @@ set(BENCHMARK_FILES
     # ${CMAKE_SOURCE_DIR}/benchmark/util.c
     # ${CMAKE_SOURCE_DIR}/benchmark/helper.hpp
     )
-set(BENCHMARK_MAIN_FILE ${CMAKE_SOURCE_DIR}/benchmark/bench_main.cpp)
+set(BENCHMARK_MAIN_FILE ${CMAKE_SOURCE_DIR}/benchmark/tatp/sqlite_tatp.cpp)
