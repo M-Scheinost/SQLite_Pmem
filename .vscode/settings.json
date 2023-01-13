@@ -62,6 +62,13 @@
         "typeinfo": "cpp",
         "fstream": "cpp",
         "iostream": "cpp",
-        "regex": "c"
+        "regex": "c",
+        "codecvt": "cpp",
+        "map": "cpp",
+        "iomanip": "cpp",
+        "stop_token": "cpp",
+        "thread": "cpp",
+        "variant": "cpp",
+        "semaphore": "cpp"
     }
 }

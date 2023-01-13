@@ -459,7 +459,7 @@ int main (int argc, char** argv){
             << n_subscriber_records
             << "\",\""
             << time
-            << "\",\"ms\""
+            << "\",\"ms\",\"\""
             << endl;
   }
 
@@ -482,7 +482,7 @@ int main (int argc, char** argv){
                 << n_subscriber_records
                 << "\",\""
                 << throughput
-                << "\",\"tps\""
+                << "\",\"tps\",\"\""
                 << endl;
   }
   return 0;

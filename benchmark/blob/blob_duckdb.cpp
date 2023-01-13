@@ -7,6 +7,7 @@
 #include <iostream>
 #include <random>
 #include <thread>
+#include <fstream>
 
 void assert_success(const std::unique_ptr<duckdb::QueryResult> &result) {
   if (!result->success) {
@@ -86,6 +87,18 @@ int main(int argc, char **argv) {
                                      result["measure"].as<size_t>());
 
     std::cout << throughput << std::endl;
+
+    std::ofstream result_file {"../../results/master_results.csv", std::ios::app};
+
+    result_file <<"\"BLOB\",\"DuckDB\",\""
+                << "none"
+                << "\",\"evaluation\""
+                << size
+                << "\",\""
+                << throughput
+                << "\",\"tps\",\"\""
+                << std::endl;
+
   }
 
   return 0;

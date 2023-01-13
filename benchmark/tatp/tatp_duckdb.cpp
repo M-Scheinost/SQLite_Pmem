@@ -4,6 +4,8 @@
 #include "helpers.hpp"
 #include "../../duckdb/duckdb.hpp"
 
+#include <fstream>
+
 template <class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
 template <class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
 
@@ -212,7 +214,7 @@ int main(int argc, char **argv) {
     double throughput = dbbench::run(workers, result["warmup"].as<size_t>(),
                                      result["measure"].as<size_t>());
 
-    std::ofstream result_file {"../../results/master_results.csv", ios::app};
+    std::ofstream result_file {"../../results/master_results.csv", std::ios::app};
 
     result_file <<"\"TATP\",\"DuckDB\",\""
                 << "none"
