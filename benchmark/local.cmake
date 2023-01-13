@@ -10,7 +10,7 @@ set(Tatp_benchmark
 
 
 set(TATP_SQLITE_MAIN_FILE  ${CMAKE_SOURCE_DIR}/benchmark/tatp/sqlite_tatp.cpp)
-# set(TATP_DUCKDB_MAIN_FILE  ${CMAKE_SOURCE_DIR}/benchmark/tatp/sqlite_tatp.cpp)
+ set(TATP_DUCKDB_MAIN_FILE  ${CMAKE_SOURCE_DIR}/benchmark/tatp/tatp_duckdb.cpp)
 
 set(SSB_SQLITE_MAIN_FILE  ${CMAKE_SOURCE_DIR}/benchmark/ssb/ssb_sqlite3.cpp)
 set(SSB_DUCKDB_MAIN_FILE  ${CMAKE_SOURCE_DIR}/benchmark/ssb/ssb_duckdb.cpp)

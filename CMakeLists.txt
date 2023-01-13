@@ -111,7 +111,10 @@ target_link_libraries(tatp_sqlite ${VFS_FILES} sqlite vfs Threads::Threads dbben
 set_target_properties(tatp_sqlite PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/tatp
 )
 
-
+add_executable(tatp_duckdb ${TATP_DUCKDB_MAIN_FILE})
+target_include_directories(tatp_duckdb PRIVATE src)
+target_link_libraries(tatp_duckdb cxxopts dbbench_tatp duckdb)
+set_target_properties(tatp_duckdb PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/tatp)
 
 #----------------------------------------------
 #   build SSB executables.

@@ -1,1 +1,2 @@
 "benchmark","database","VFS","phase","scale_factor","value","unit"
+"TATP","SQLite","PMem","loading"10000","150","ms"
