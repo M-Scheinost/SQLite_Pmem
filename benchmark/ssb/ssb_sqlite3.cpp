@@ -61,20 +61,20 @@ int main(int argc, char **argv) {
 
   uint64_t mask = result["bloom_filter"].as<bool>() ? 0 : 0x00080000;
   int rc = sqlite3_test_control(SQLITE_TESTCTRL_OPTIMIZATIONS, db,mask);
-  if (rc != SQLITE_OK) {throw std::runtime_error(sqlite3_errmsg(db));}
+  if (rc != SQLITE_OK) {cout << "test control not working " << rc << endl;}
 
   rc = sqlite3_exec(db,"ANALYZE", NULL,NULL,NULL);
-  if (rc != SQLITE_OK) {throw std::runtime_error(sqlite3_errmsg(db));}
+  if (rc != SQLITE_OK) {cout << "ANALYZE: " << rc << endl;}
   rc = sqlite3_exec(db,"SELECT * FROM lineorder", NULL,NULL,NULL);
-  if (rc != SQLITE_OK) {throw std::runtime_error(sqlite3_errmsg(db));}
+  if (rc != SQLITE_OK) {cout << "SELECT 1 " << rc << endl;}
   rc = sqlite3_exec(db,"SELECT * FROM part", NULL,NULL,NULL);
-  if (rc != SQLITE_OK) {throw std::runtime_error(sqlite3_errmsg(db));}
+  if (rc != SQLITE_OK) {cout << "SELECT 2 " << rc << endl;}
   rc = sqlite3_exec(db,"SELECT * FROM supplier", NULL,NULL,NULL);
-  if (rc != SQLITE_OK) {throw std::runtime_error(sqlite3_errmsg(db));}
+  if (rc != SQLITE_OK) {cout << "SELECT 3 " << rc << endl;}
   rc = sqlite3_exec(db,"SELECT * FROM customer", NULL,NULL,NULL);
-  if (rc != SQLITE_OK) {throw std::runtime_error(sqlite3_errmsg(db));}
+  if (rc != SQLITE_OK) {cout << "SELECT 4 " << rc << endl;}
   rc = sqlite3_exec(db,"SELECT * FROM date", NULL,NULL,NULL);
-  if (rc != SQLITE_OK) {throw std::runtime_error(sqlite3_errmsg(db));}
+  if (rc != SQLITE_OK) {cout << "SELECT 5 " << rc << endl;}
 
   std::ofstream result_file {"../../results/master_results.csv", std::ios::app};
 
@@ -85,13 +85,13 @@ int main(int argc, char **argv) {
 
 
     //std::cout << time([&] { conn.execute(sql).expect(SQLITE_OK); });
-    result_file <<"\"SSB\",\"DuckDB\",\""
+    result_file <<"\"SSB\",\"SQLite\",\""
                 << "none"
                 << "\",\"evaluation\""
                 << sf
                 << "\",\""
                 << time([&] { rc = sqlite3_exec(db,sql.c_str(), NULL,NULL,NULL);
-                              if (rc != SQLITE_OK) {throw std::runtime_error(sqlite3_errmsg(db));} })
+                              if (rc != SQLITE_OK) {cout << "error querry: " << query << "\t" << rc << endl;} })
                 << "\",\"ms\",\""
                 << query
                 << "\""

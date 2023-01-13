@@ -1,5 +1,7 @@
 #!/bin/bash
 
+printf "n______________________________________________________\n\t\t\tNew test run\n______________________________________________________\n" >> ../../results/master_results.csv
+
 chmod u+x ssb/sqlite_ssb.sh
 chmod u+x ssb/duckdb_ssb.sh
 chmod u+x tatp/sqlite_tatp.sh

@@ -5,7 +5,7 @@ for sf in 100000 1000000 10000000; do
     printf "*** Blob benchmark (scale factor %s) ***\n" "$sf"
 
     path=""
-    if [ "$pm" = "true" ]
+    if [ "$pm" = "PMem" ]
     then
       path+="/mnt/pmem0/scheinost/benchmark.db"
     else
