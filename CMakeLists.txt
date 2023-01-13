@@ -154,7 +154,10 @@ target_link_libraries(blob_duckdb cxxopts dbbench_core duckdb)
 set_target_properties(blob_duckdb PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/blob)
 
 # Scripts.
-configure_file(benchmark/scripts/ssb.sh ${CMAKE_CURRENT_BINARY_DIR}/ssb/ssb.sh COPYONLY)
-configure_file(benchmark/scripts/tatp.sh ${CMAKE_CURRENT_BINARY_DIR}/tatp/tatp.sh COPYONLY)
-configure_file(benchmark/scripts/blob.sh ${CMAKE_CURRENT_BINARY_DIR}/blob/blob.sh COPYONLY)
+configure_file(benchmark/scripts/duckdb_ssb.sh ${CMAKE_CURRENT_BINARY_DIR}/ssb/sqlite_ssb.sh COPYONLY)
+configure_file(benchmark/scripts/sqlite_ssb.sh ${CMAKE_CURRENT_BINARY_DIR}/ssb/duckdb_ssb.sh COPYONLY)
+configure_file(benchmark/scripts/sqlite_tatp.sh ${CMAKE_CURRENT_BINARY_DIR}/tatp/sqlite_tatp.sh COPYONLY)
+configure_file(benchmark/scripts/duckdb_tatp.sh ${CMAKE_CURRENT_BINARY_DIR}/tatp/duckdb_tatp.sh COPYONLY)
+configure_file(benchmark/scripts/sqlite_blob.sh ${CMAKE_CURRENT_BINARY_DIR}/blob/sqlite_blob.sh COPYONLY)
+configure_file(benchmark/scripts/duckdb_blob.sh ${CMAKE_CURRENT_BINARY_DIR}/blob/duckdb_blob.sh COPYONLY)
 configure_file(benchmark/scripts/all.sh ${CMAKE_CURRENT_BINARY_DIR}/all.sh COPYONLY)
