@@ -21,6 +21,6 @@ chmod u+x blob/duckdb_blob.sh
 
 (
   cd blob || exit
-#  ./sqlite_blob.sh
+  ./sqlite_blob.sh
   ./duckdb_blob.sh
 )
