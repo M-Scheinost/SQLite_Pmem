@@ -106,9 +106,9 @@ target_compile_options(sqlite3_shell PRIVATE -DSQLITE_THREADSAFE=0 -DSQLITE_OMIT
 #   build TATP bench executable
 #----------------------------------------------
 
-add_executable(tatp_bench ${TATP_SQLITE_MAIN_FILE})
-target_link_libraries(tatp_bench ${VFS_FILES} sqlite vfs Threads::Threads dbbench_tatp cxxopts pmem pmemlog dl m)
-set_target_properties(tatp_bench PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/tatp
+add_executable(tatp_sqlite ${TATP_SQLITE_MAIN_FILE})
+target_link_libraries(tatp_sqlite ${VFS_FILES} sqlite vfs Threads::Threads dbbench_tatp cxxopts pmem pmemlog dl m)
+set_target_properties(tatp_sqlite PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/tatp
 )
 
 

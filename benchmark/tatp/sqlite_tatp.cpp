@@ -394,7 +394,7 @@ sqlite3* open_db(const char* path, string pmem){
   sqlite3 *db;
   int rc;
   int flags = SQLITE_OPEN_CREATE | SQLITE_OPEN_READWRITE;
-  if(pmem == "true" || pmem == "pmem-nvme"){
+  if(pmem == "PMem" || pmem == "pmem-nvme"){
     sqlite3_vfs_register(sqlite3_pmem_vfs(), 0);
     rc = sqlite3_open_v2(path, &db, flags, "PMem_VFS");
   }
@@ -429,7 +429,7 @@ int main (int argc, char** argv){
   adder("journal_mode", "Journal mode", cxxopts::value<std::string>()->default_value("DELETE"));
   adder("cache_size", "Cache size", cxxopts::value<std::string>()->default_value("-1000000"));
   adder("path", "Path", cxxopts::value<std::string>()->default_value("/mnt/pmem0/scheinost/benchmark.db"));
-  adder("pmem", "Pmem", cxxopts::value<std::string>()->default_value("true"));
+  adder("pmem", "Pmem", cxxopts::value<std::string>()->default_value("PMem"));
 
   cxxopts::ParseResult result = options.parse(argc, argv);
 
@@ -452,8 +452,15 @@ int main (int argc, char** argv){
     auto time = chrono::duration_cast<chrono::milliseconds>(end - start).count();
     close_db(db);
     
-    ofstream result_file {"/home/scheinost/SQLite_Pmem/results.csv", ios::app};
-    result_file <<"\"Loading\",\"" << path << "\",\""<< n_subscriber_records << "\",\"" << pmem << "\",\"" << time << "\",\"ms\"" << endl;
+    ofstream result_file {"../../results/master_results.csv", ios::app};
+    result_file <<"\"TATP\",\"SQLite\",\""
+            << pmem
+            << "\",\"loading\""
+            << n_subscriber_records
+            << "\",\""
+            << time
+            << "\",\"ms\""
+            << endl;
   }
 
   if (result.count("run")) {
@@ -467,9 +474,16 @@ int main (int argc, char** argv){
     std::cout << throughput << std::endl;
     close_db(db);
 
-    ofstream result_file {"/home/scheinost/SQLite_Pmem/results.csv", ios::app};
+    ofstream result_file {"../../results/master_results.csv", ios::app};
 
-    result_file <<"\"Benchmark\",\"" << path << "\",\""<< n_subscriber_records << "\",\"" << pmem << "\",\"" << throughput << "\",\"tps\"" << endl;
+    result_file <<"\"TATP\",\"SQLite\",\""
+                << pmem
+                << "\",\"evaluation\""
+                << n_subscriber_records
+                << "\",\""
+                << throughput
+                << "\",\"tps\""
+                << endl;
   }
   return 0;
 }
