@@ -9,7 +9,7 @@ chmod u+x blob/duckdb_blob.sh
 
 (
   cd ssb || exit
-#  ./sqlite_ssb.sh
+  ./sqlite_ssb.sh
   ./duckdb_ssb.sh
 )
 

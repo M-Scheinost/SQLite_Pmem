@@ -107,7 +107,7 @@ target_compile_options(sqlite3_shell PRIVATE -DSQLITE_THREADSAFE=0 -DSQLITE_OMIT
 #----------------------------------------------
 
 add_executable(tatp_sqlite ${TATP_SQLITE_MAIN_FILE})
-target_link_libraries(tatp_sqlite ${VFS_FILES} sqlite vfs Threads::Threads dbbench_tatp cxxopts pmem pmemlog dl m)
+target_link_libraries(tatp_sqlite ${VFS_FILES} sqlite vfs Threads::Threads dbbench_tatp cxxopts pmem dl m)
 set_target_properties(tatp_sqlite PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/tatp
 )
 
@@ -122,14 +122,10 @@ set_target_properties(tatp_duckdb PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CU
 
 add_subdirectory(benchmark/ssb/dbgen)
 
-#       add_executable(ssb_sqlite3 ${SSB_SQLITE_MAIN_FILE})
-#       
-#       target_link_libraries(ssb_sqlite3 cxxopts sqlite sqlite3cpp)
-#       set_target_properties(
-#               ssb_sqlite3
-#               PROPERTIES
-#               RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/ssb
-#       )
+add_executable(ssb_sqlite3 ${SSB_SQLITE_MAIN_FILE})
+
+target_link_libraries(ssb_sqlite3 cxxopts sqlite ${VFS_FILES} pmem dl m Threads::Threads)
+set_target_properties(ssb_sqlite3 PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/ssb)
 
 add_executable(ssb_duckdb ${SSB_DUCKDB_MAIN_FILE})
 target_include_directories(ssb_duckdb PRIVATE src)
@@ -157,8 +153,8 @@ target_link_libraries(blob_duckdb cxxopts dbbench_core duckdb)
 set_target_properties(blob_duckdb PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/blob)
 
 # Scripts.
-configure_file(benchmark/scripts/duckdb_ssb.sh ${CMAKE_CURRENT_BINARY_DIR}/ssb/sqlite_ssb.sh COPYONLY)
-configure_file(benchmark/scripts/sqlite_ssb.sh ${CMAKE_CURRENT_BINARY_DIR}/ssb/duckdb_ssb.sh COPYONLY)
+configure_file(benchmark/scripts/duckdb_ssb.sh ${CMAKE_CURRENT_BINARY_DIR}/ssb/duckdb_ssb.sh COPYONLY)
+configure_file(benchmark/scripts/sqlite_ssb.sh ${CMAKE_CURRENT_BINARY_DIR}/ssb/sqlite_ssb.sh COPYONLY)
 configure_file(benchmark/scripts/sqlite_tatp.sh ${CMAKE_CURRENT_BINARY_DIR}/tatp/sqlite_tatp.sh COPYONLY)
 configure_file(benchmark/scripts/duckdb_tatp.sh ${CMAKE_CURRENT_BINARY_DIR}/tatp/duckdb_tatp.sh COPYONLY)
 configure_file(benchmark/scripts/sqlite_blob.sh ${CMAKE_CURRENT_BINARY_DIR}/blob/sqlite_blob.sh COPYONLY)

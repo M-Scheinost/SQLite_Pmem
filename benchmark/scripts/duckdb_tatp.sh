@@ -1,6 +1,6 @@
 #!/bin/bash
 
-for sf in 10000 100000 1000000; do
+for sf in 10000 100000 1000000 10000000; do
 
   printf "Loading data into DuckDB...\n"
     ./tatp_duckdb --load --records=$sf
@@ -10,7 +10,7 @@ for sf in 10000 100000 1000000; do
   command="./tatp_duckdb --run --records=$sf"
   printf "%s\n" "$command"
   for trial in {1..3}; do
-    printf "%s," "$trial"
+    printf "%s,\n" "$trial"
     eval "$command"
   done
 
