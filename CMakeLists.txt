@@ -31,6 +31,8 @@ set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -O0 -D_GLIBC_DEBUG")
 set(SQLITE_WIN_BUILD OFF)
 set(SQLITE_WINRT_BUILD OFF)
 
+set(CMAKE_CXX_STANDARD 17)
+
 # ---------------------
 # Version detection
 # ---------------------
@@ -58,30 +60,16 @@ set(SQLITE_STATIC_NAME "${SQLITE_DYN_NAME}-static")
 find_package(Threads REQUIRED)
 
 # add include path for project
-include_directories(${PROJECT_SOURCE_DIR}/src)
 include(${CMAKE_SOURCE_DIR}/benchmark/local.cmake)
 include(${CMAKE_SOURCE_DIR}/sqlite/local.cmake)
 include(${CMAKE_SOURCE_DIR}/vfs/local.cmake)
 include(${CMAKE_SOURCE_DIR}/duckdb/local.cmake)
 
-
-# target_compile_options(
-#         sqlite
-#         PRIVATE
-#         -DSQLITE_DQS=0
-#         -DSQLITE_THREADSAFE=0
-#         -DSQLITE_OMIT_LOAD_EXTENSION
-#         -DSQLITE_DEFAULT_MEMSTATUS=0
-#         -DSQLITE_DEFAULT_WAL_SYNCHRONOUS=1
-#         -DSQLITE_LIKE_DOESNT_MATCH_BLOBS
-#         -DSQLITE_MAX_EXPR_DEPTH=0
-#         -DSQLITE_OMIT_DECLTYPE
-#         -DSQLITE_OMIT_DEPRECATED
-#         -DSQLITE_OMIT_PROGRESS_CALLBACK
-#         -DSQLITE_OMIT_SHARED_CACHE
-#         -DSQLITE_USE_ALLOCA
-#         -DSQLITE_OMIT_AUTOINIT
-# )
+add_library(duckdb
+        ${CMAKE_SOURCE_DIR}/duckdb/duckdb.cpp
+        ${CMAKE_SOURCE_DIR}/duckdb/duckdb.hpp
+)
+target_link_libraries(duckdb Threads::Threads ${CMAKE_DL_LIBS})
 
 #-------------------------------------------
 #       Fetch git stuff
@@ -107,6 +95,12 @@ FetchContent_Declare(
 set(DBBENCH_BUILD_EXAMPLES OFF)
 FetchContent_MakeAvailable(dbbench)
 
+#----------------------------------------------
+#   build shell executable
+#----------------------------------------------
+add_executable(sqlite3_shell ${SQLITE_SHELL})
+target_link_libraries(sqlite3_shell ${SQLITE_FILES} Threads::Threads dl)
+target_compile_options(sqlite3_shell PRIVATE -DSQLITE_THREADSAFE=0 -DSQLITE_OMIT_LOAD_EXTENSION)
 
 #----------------------------------------------
 #   build TATP bench executable
@@ -125,23 +119,19 @@ set_target_properties(tatp_bench PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CUR
 
 add_subdirectory(benchmark/ssb/dbgen)
 
-add_executable(ssb_sqlite3 ${SSB_SQLITE_MAIN_FILE})
-
-target_link_libraries(ssb_sqlite3 cxxopts sqlite sqlite3cpp)
-set_target_properties(
-        ssb_sqlite3
-        PROPERTIES
-        RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/ssb
-)
+#       add_executable(ssb_sqlite3 ${SSB_SQLITE_MAIN_FILE})
+#       
+#       target_link_libraries(ssb_sqlite3 cxxopts sqlite sqlite3cpp)
+#       set_target_properties(
+#               ssb_sqlite3
+#               PROPERTIES
+#               RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/ssb
+#       )
 
 add_executable(ssb_duckdb ${SSB_DUCKDB_MAIN_FILE})
 target_include_directories(ssb_duckdb PRIVATE src)
 target_link_libraries(ssb_duckdb cxxopts ${CMAKE_DL_LIBS} duckdb)
-set_target_properties(
-        ssb_duckdb
-        PROPERTIES
-        RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/ssb
-)
+set_target_properties(ssb_duckdb PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/ssb)
 
 file(COPY benchmark/ssb/sql DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/ssb)
 
@@ -149,23 +139,19 @@ file(COPY benchmark/ssb/sql DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/ssb)
 #   build Blob executables.
 #----------------------------------------------
 
-add_executable(blob_sqlite3 ${BLOB_SQLITE_MAIN_FILE})
-target_include_directories(blob_sqlite3 PRIVATE src src/systems/sqlite)
-target_link_libraries(blob_sqlite3 cxxopts dbbench_core sqlite3 sqlite3cpp)
-set_target_properties(
-        blob_sqlite3
-        PROPERTIES
-        RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/blob
-)
+#       add_executable(blob_sqlite3 ${BLOB_SQLITE_MAIN_FILE})
+#       target_include_directories(blob_sqlite3 PRIVATE src src/systems/sqlite)
+#       target_link_libraries(blob_sqlite3 cxxopts dbbench_core sqlite3 sqlite3cpp)
+#       set_target_properties(
+#               blob_sqlite3
+#               PROPERTIES
+#               RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/blob
+#       )
 
 add_executable(blob_duckdb ${BLOB_DUCKDB_MAIN_FILE})
 target_include_directories(blob_duckdb PRIVATE src)
 target_link_libraries(blob_duckdb cxxopts dbbench_core duckdb)
-set_target_properties(
-        blob_duckdb
-        PROPERTIES
-        RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/blob
-)
+set_target_properties(blob_duckdb PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/blob)
 
 # Scripts.
 configure_file(benchmark/scripts/ssb.sh ${CMAKE_CURRENT_BINARY_DIR}/ssb/ssb.sh COPYONLY)
