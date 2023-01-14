@@ -96,7 +96,9 @@ int main(int argc, char **argv) {
                 << size
                 << "\",\""
                 << throughput
-                << "\",\"tps\",\"\""
+                << "\",\"tps\",\""
+                << mix
+                << "\",\"\""
                 << std::endl;
 
   }

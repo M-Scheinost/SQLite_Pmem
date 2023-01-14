@@ -83,6 +83,7 @@ int main(int argc, char **argv) {
         "q3.4", "q4.1", "q4.2", "q4.3"}) {
     std::string sql = readfile("sql/" + query + ".sql");
 
+    //cout << sql << endl;
 
     //std::cout << time([&] { conn.execute(sql).expect(SQLITE_OK); });
     result_file <<"\"SSB\",\"SQLite\",\""
@@ -94,7 +95,7 @@ int main(int argc, char **argv) {
                               if (rc != SQLITE_OK) {cout << "error querry: " << query << "\t" << rc << endl;} })
                 << "\",\"ms\",\""
                 << query
-                << "\""
+                << "\",\"1\""
                 << std::endl;
     
   }

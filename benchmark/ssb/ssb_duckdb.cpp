@@ -79,6 +79,8 @@ int main(int argc, char **argv) {
                 << time([&] { assert_success(conn.Query(sql)); })
                 << "\",\"ms\",\""
                 << query
+                << "\",\""
+                << threads
                 << "\""
                 << std::endl;
     }

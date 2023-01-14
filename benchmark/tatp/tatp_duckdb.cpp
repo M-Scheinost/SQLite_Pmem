@@ -222,7 +222,7 @@ int main(int argc, char **argv) {
                 << n_subscriber_records
                 << "\",\""
                 << throughput
-                << "\",\"tps\""
+                << "\",\"tps\",\"\",\"1\""
                 << std::endl;
   }
 }

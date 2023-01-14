@@ -144,7 +144,18 @@ int main(int argc, char **argv) {
     double throughput = dbbench::run(workers, result["warmup"].as<size_t>(),
                                      result["measure"].as<size_t>());
 
-    std::cout << throughput << std::endl;
+    ofstream result_file {"../../results/master_results.csv", ios::app};
+
+    result_file <<"\"TATP\",\"SQLite\",\""
+                << pmem
+                << "\",\"evaluation\""
+                << n_subscriber_records
+                << "\",\""
+                << throughput
+                << "\",\"tps\",\""
+                << mix
+                << \",\"1\""
+                << endl;
 
      close_db(db);
   }

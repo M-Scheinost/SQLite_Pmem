@@ -1,7 +1,7 @@
 #!/bin/bash
 
 for sf in 1 2 5; do
-  for pm in "PMem" "unix"; do
+  for pm in "unix" "PMem"; do
   printf "*** SSB (scale factor %s) ***\n" "$sf"
 
   path=""
