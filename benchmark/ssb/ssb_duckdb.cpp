@@ -77,7 +77,7 @@ int main(int argc, char **argv) {
                 << sf
                 << "\",\""
                 << time([&] { assert_success(conn.Query(sql)); })
-                << "\",\"ms\",\""
+                << "\",\"s\",\""
                 << query
                 << "\",\""
                 << threads

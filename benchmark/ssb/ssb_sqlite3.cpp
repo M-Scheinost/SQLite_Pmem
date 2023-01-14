@@ -8,6 +8,11 @@
 
 using namespace std;
 
+void exec(sqlite3* db, const string &stmnt, const string &query){
+  int rc = sqlite3_exec(db, stmnt.c_str(), NULL,NULL,NULL);
+  if (rc != SQLITE_OK) {cout << "error querry: " << query << "\t" << rc << endl;}
+}
+
 sqlite3* open_db(const char* path, string pmem){
   sqlite3 *db;
   int rc;
@@ -22,6 +27,7 @@ sqlite3* open_db(const char* path, string pmem){
   }
   else{
     rc = sqlite3_open_v2(path, &db, flags, "unix");
+    cout << "opened unix vfs" << endl;
   }
   if(rc){cout <<"Open:\t" << rc << endl;}
   rc = sqlite3_exec(db,"PRAGMA journal_mode=WAL", NULL,NULL,NULL);
@@ -81,19 +87,18 @@ int main(int argc, char **argv) {
   for (const std::string &query :
        {"q1.1", "q1.2", "q1.3", "q2.1", "q2.2", "q2.3", "q3.1", "q3.2", "q3.3",
         "q3.4", "q4.1", "q4.2", "q4.3"}) {
-    std::string sql = readfile("sql/" + query + ".sql");
+    const std::string sql = readfile("sql/" + query + ".sql");
 
     //cout << sql << endl;
 
     //std::cout << time([&] { conn.execute(sql).expect(SQLITE_OK); });
     result_file <<"\"SSB\",\"SQLite\",\""
-                << "none"
+                << pmem
                 << "\",\"evaluation\""
                 << sf
                 << "\",\""
-                << time([&] { rc = sqlite3_exec(db,sql.c_str(), NULL,NULL,NULL);
-                              if (rc != SQLITE_OK) {cout << "error querry: " << query << "\t" << rc << endl;} })
-                << "\",\"ms\",\""
+                << time([&] { exec(db,sql,query); })
+                << "\",\"s\",\""
                 << query
                 << "\",\"1\""
                 << std::endl;
