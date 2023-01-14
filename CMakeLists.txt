@@ -138,14 +138,10 @@ file(COPY benchmark/ssb/sql DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/ssb)
 #   build Blob executables.
 #----------------------------------------------
 
-#       add_executable(blob_sqlite3 ${BLOB_SQLITE_MAIN_FILE})
-#       target_include_directories(blob_sqlite3 PRIVATE src src/systems/sqlite)
-#       target_link_libraries(blob_sqlite3 cxxopts dbbench_core sqlite3 sqlite3cpp)
-#       set_target_properties(
-#               blob_sqlite3
-#               PROPERTIES
-#               RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/blob
-#       )
+add_executable(blob_sqlite3 ${BLOB_SQLITE_MAIN_FILE})
+target_include_directories(blob_sqlite3 PRIVATE src src/systems/sqlite)
+target_link_libraries(blob_sqlite3 cxxopts sqlite dbbench_core ${VFS_FILES} pmem dl m Threads::Threads)
+set_target_properties(blob_sqlite3 PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/blob)
 
 add_executable(blob_duckdb ${BLOB_DUCKDB_MAIN_FILE})
 target_include_directories(blob_duckdb PRIVATE src)

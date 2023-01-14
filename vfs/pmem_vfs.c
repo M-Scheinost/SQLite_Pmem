@@ -815,8 +815,8 @@ static int pmem_open(
 
   /* no tmp files allowd */
   if( file_path == 0 ){
-    return SQLITE_IOERR;
-    //file_path = "/mnt/pmem0/scheinost/tmp"
+    //return SQLITE_IOERR;
+    file_path = "/mnt/pmem0/scheinost/tmp.sb";
   }
 
   /* completly zeros p*/

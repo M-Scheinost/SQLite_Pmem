@@ -27,7 +27,6 @@ sqlite3* open_db(const char* path, string pmem){
   }
   else{
     rc = sqlite3_open_v2(path, &db, flags, "unix");
-    cout << "opened unix vfs" << endl;
   }
   if(rc){cout <<"Open:\t" << rc << endl;}
   rc = sqlite3_exec(db,"PRAGMA journal_mode=WAL", NULL,NULL,NULL);

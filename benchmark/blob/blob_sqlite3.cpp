@@ -1,12 +1,16 @@
 #include "cxxopts.hpp"
 #include "dbbench/runner.hpp"
 #include "helpers.hpp"
-#include "sqlite3.hpp"
 
 #include <atomic>
 #include <iostream>
 #include <random>
 #include <thread>
+#include <fstream>
+
+#include "../../sqlite/sqlite3.h"
+#include "../../vfs/pmem_vfs.h"
+#include "../../vfs/pmem_wal_only_vfs.h"
 
 using namespace std;
 
@@ -28,9 +32,9 @@ public:
   Worker(sqlite3*db_, size_t size, float mix) : db(db_), size_(size), blob_(malloc(size)),
         dis_({mix, 1.0 - mix}), gen_(std::random_device()()) {
     int rc = sqlite3_prepare_v2(db, "SELECT a FROM t", -1, &select_stmt_, NULL);
-    if (rc) {throw std::runtime_error(sqlite3_errmsg(db));}
-    rc = sqlite3_prepare_v2(db, "UPDATE t SET a = ?", -1, &select_stmt_, NULL);
-    if (rc) {throw std::runtime_error(sqlite3_errmsg(db));}
+     if(rc){cout << "SELECT: " << rc << endl;}
+    rc = sqlite3_prepare_v2(db, "UPDATE t SET a = ?", -1, &update_stmt_, NULL);
+     if(rc){cout << "UPDATE: " << rc << endl;}
   }
 
   ~Worker() { free(blob_); }
@@ -40,12 +44,18 @@ public:
     int rc;
     if (type == 0) {
       rc = step_single(select_stmt_);
-      if (rc) {throw std::runtime_error(sqlite3_errmsg(db));}
+      if(rc){cout << "step: " << rc << endl;}
     } else {
-      rc = sqlite3_bind_blob(update_stmt_,1,blob_, size_, MULL);
-      if (rc != SQLITE_OK) {throw std::runtime_error(sqlite3_errmsg(db));}
+      rc = sqlite3_exec(db, "BEGIN EXCLUSIVE;", NULL,NULL,NULL);
+      if(rc){cout << "Begin trans: " << rc << endl;}
+
+      rc = sqlite3_bind_blob(update_stmt_,1,blob_, (int) size_, NULL);
+      if(rc){cout << "bind blob: " << rc << endl;}
       rc = step_single(update_stmt_);
-      if (rc) {throw std::runtime_error(sqlite3_errmsg(db));}
+      if(rc){cout << "step: " << rc << endl;}
+
+      rc = sqlite3_exec(db, "COMMIT;", NULL,NULL,NULL);
+      if(rc){cout <<"load commit: " << stat << endl;}
     }
 
     return true;
@@ -95,7 +105,7 @@ void close_db(sqlite3* db){
 int main(int argc, char **argv) {
   cxxopts::Options options =
       blob_options("blob_sqlite3", "Blob benchmark on SQLite3");
-
+  cxxopts::OptionAdder adder = options.add_options("SQLite3");
   adder("path", "Path", cxxopts::value<std::string>()->default_value("/mnt/pmem0/scheinost/benchmark.db"));
   adder("pmem", "Pmem", cxxopts::value<std::string>()->default_value("PMem"));
 
@@ -115,19 +125,24 @@ int main(int argc, char **argv) {
     sqlite3* db = open_db(path.c_str(),pmem);
 
     rc = sqlite3_exec(db,"DROP TABLE IF EXISTS t", NULL,NULL,NULL);
-    if (rc != SQLITE_OK) {throw std::runtime_error(sqlite3_errmsg(db));}
+     if(rc){cout << "DROP: " << rc << endl;}
     rc = sqlite3_exec(db,"CREATE TABLE t (a BLOB)", NULL,NULL,NULL);
-    if (rc != SQLITE_OK) {throw std::runtime_error(sqlite3_errmsg(db));}
+     if(rc){cout << "CREATE: " << rc << endl;}
 
     void *blob = malloc(size);
-
+    rc = sqlite3_exec(db, "BEGIN EXCLUSIVE;", NULL,NULL,NULL);
+    if(rc){cout << "Begin trans: " << rc << endl;}
     sqlite3_stmt *stmnt;
     rc = sqlite3_prepare_v2(db, "INSERT INTO t VALUES (?)",-1, &stmnt, NULL);
-    if (rc != SQLITE_OK) {throw std::runtime_error(sqlite3_errmsg(db));}
-    rc = sqlite3_bind_blob(stmnt,1,blob, size, MULL);
-    if (rc != SQLITE_OK) {throw std::runtime_error(sqlite3_errmsg(db));}
+    if(rc){cout << "Insert blob: " << rc << endl;}
+    rc = sqlite3_bind_blob(stmnt,1,blob, (int) size, NULL);
+    if(rc){cout << "bind blob: " << rc << endl;}
     rc = step_single(stmnt);
-    if (rc != SQLITE_OK) {throw std::runtime_error(sqlite3_errmsg(db));}
+    if(rc){cout << "step: " << rc << endl;}
+
+    rc = sqlite3_exec(db, "COMMIT;", NULL,NULL,NULL);
+    if(rc){cout <<"load commit: " << stat << endl;}
+
     close_db(db);
     free(blob);
   }
@@ -135,8 +150,8 @@ int main(int argc, char **argv) {
   if (result.count("run")) {
     sqlite3* db = open_db(path.c_str(),pmem);
 
-    rc = sqlite3_exec(db,"PRAGMA cache_size=-1000000", NULL,NULL,NULL);
-    if (rc != SQLITE_OK) {throw std::runtime_error(sqlite3_errmsg(db));}
+    // rc = sqlite3_exec(db,"PRAGMA cache_size=-1000000", NULL,NULL,NULL);
+    // if (rc != SQLITE_OK) {throw std::runtime_error(sqlite3_errmsg(db));}
     
     std::vector<Worker> workers;
     workers.emplace_back(db, size, mix);
@@ -144,17 +159,17 @@ int main(int argc, char **argv) {
     double throughput = dbbench::run(workers, result["warmup"].as<size_t>(),
                                      result["measure"].as<size_t>());
 
-    ofstream result_file {"../../results/master_results.csv", ios::app};
+    ofstream result_file {"../../results/master_results.csv", std::ios::app};
 
-    result_file <<"\"TATP\",\"SQLite\",\""
+    result_file <<"\"BLOB\",\"SQLite\",\""
                 << pmem
                 << "\",\"evaluation\""
-                << n_subscriber_records
+                << size
                 << "\",\""
                 << throughput
                 << "\",\"tps\",\""
                 << mix
-                << \",\"1\""
+                << "\",\"1\""
                 << endl;
 
      close_db(db);

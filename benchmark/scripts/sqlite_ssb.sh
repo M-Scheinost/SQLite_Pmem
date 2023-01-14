@@ -5,7 +5,7 @@ for sf in 1 2 5; do
   rm -f ./*.tbl
   ./dbgen -s "$sf"
 
-  for pm in "unix" "PMem"; do
+  for pm in "PMem" "unix"; do
   printf "*** SSB (scale factor %s) ***\n" "$sf"
 
   path=""
@@ -30,5 +30,9 @@ for sf in 1 2 5; do
       done
     done
     rm $path*
+    if [ "$pm" = "PMem" ]
+    then
+      rm /mnt/pmem0/scheinost/tmp.sb
+    fi
   done  
 done
