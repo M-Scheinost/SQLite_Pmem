@@ -493,7 +493,8 @@ static int pmem_sync(sqlite3_file *pFile, int flags){
   Persistent_File *p = (Persistent_File*)pFile;
   // p->sync_calls++;
   if(p->is_pmem){
-    return pmem_deep_persist(p->pmem_file, p->pmem_size);
+    pmem_persist(p->pmem_file, p->pmem_size);
+    return 0;
   }
   else{
     return pmem_msync(p->pmem_file, p->pmem_size);
@@ -545,7 +546,7 @@ inline static int pmem_file_control(sqlite3_file *pFile, int op, void *pArg){
 */
 static int pmem_sector_size(sqlite3_file *pFile){
   /* 4096 is standard unix sector size*/
-  return 1;
+  return 256;
 }
 inline static int pmem_device_characteristics(sqlite3_file *pFile){
   // // printf("device characteristics\n");
@@ -856,7 +857,7 @@ retry:
     fclose(f);
     rc = map_pmem(p, PMEM_LEN);
   }
-  //printf("open %s\n", file_path);
+  // printf("open %s\n", file_path);
   return rc;
 }
 

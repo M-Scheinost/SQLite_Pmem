@@ -277,11 +277,6 @@ void load_db_1(sqlite3 *db, size_t db_size){
   int i = 0;
   sqlite3_exec(db, "BEGIN EXCLUSIVE;", NULL,NULL,NULL);
   while(auto record = record_generator.next()){
-    
-    // if(i % 50000 == 0){
-    //   sqlite3_exec(db, "BEGIN EXCLUSIVE;", NULL,NULL,NULL);
-    // }
-    //   cout << i << " " << flush;
     std::visit(
         overloaded{
             [&](const dbbench::tatp::SubscriberRecord &r) {
@@ -366,11 +361,6 @@ void load_db_1(sqlite3 *db, size_t db_size){
             },
         },
         *record);
-        // if(i%50000 == 0){
-        //   rc = sqlite3_exec(db, "COMMIT;", NULL,NULL,NULL);
-        //   if(rc){cout <<"load commit: " << stat << endl;}
-        // }
-        // i++;
   }
 
   rc = sqlite3_exec(db, "COMMIT;", NULL,NULL,NULL);
