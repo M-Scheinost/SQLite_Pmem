@@ -30,9 +30,5 @@ for sf in 1 2 5; do
       done
     done
     rm $path*
-    if [ "$pm" = "PMem" ]
-    then
-      rm /mnt/pmem0/scheinost/tmp.sb
-    fi
   done  
 done

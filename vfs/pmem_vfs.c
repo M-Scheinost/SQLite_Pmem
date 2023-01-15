@@ -364,6 +364,7 @@ struct Persistent_File {
   int shm_is_pmem;
   int times_mapped; /* the number of times pmem_fetch was called*/
   char *shm_path;
+  int tmp;
   //int write_calls;
 };
 
@@ -398,7 +399,7 @@ void unmap_pmem(Persistent_File* p){
   p->is_pmem = 0;
 }
 
-
+static int demoDelete(sqlite3_vfs *pVfs, const char *zPath, int dirSync);
 /*
 */
 static int pmem_close(sqlite3_file *pFile){
@@ -407,6 +408,10 @@ static int pmem_close(sqlite3_file *pFile){
   // printf("write_calls: %s  %i\n", p->path, p->write_calls);
   //fflush(stdout);
   unmap_pmem(p);
+  if(p->tmp){
+    demoDelete(NULL, p->path, 1);
+  }
+  //printf("close %s\n", p->path);
   return SQLITE_OK;
 }
 
@@ -712,7 +717,7 @@ static int pmem_shm_unmap(
   if(deleteFlag){
     p->shm_size = 0;
     p->shm_used_size = 0;
-    //pmem_delete_file(p->shm_path,1);
+    demoDelete(NULL, p->shm_path,1);
   }
   return SQLITE_OK; 
 }
@@ -812,16 +817,17 @@ static int pmem_open(
   };
 
   Persistent_File *p = (Persistent_File*)pFile; /* Populate this structure */
-
+  
   /* no tmp files allowd */
-  if( file_path == 0 ){
-    //return SQLITE_IOERR;
-    file_path = "/mnt/pmem0/scheinost/tmp.sb";
-  }
 
   /* completly zeros p*/
   memset(p, 0, sizeof(Persistent_File));
-
+    if( file_path == 0 ){
+    //return SQLITE_IOERR;
+    file_path = "/mnt/pmem0/scheinost/tmp.sb";
+    p->tmp++;
+  }
+retry:
   p->path = file_path;
   p->base.pMethods = &pmem_io;
 
@@ -832,6 +838,11 @@ static int pmem_open(
   struct stat st;
   int rc = stat(p->path, &st);
   if(rc == 0){
+    if(p->tmp){
+      file_path = "/mnt/pmem0/scheinost/tmp1.sb";
+      p->tmp++;
+      goto retry;
+    }
     p->used_size = st.st_size;
     rc = map_pmem(p, p->used_size);
   }
@@ -839,11 +850,13 @@ static int pmem_open(
     p->used_size = 0;
     FILE *f = fopen(p->path, "w");
     if(f == NULL){
+      printf("failed open %s\n", p->path);
       return SQLITE_IOERR;
     }
     fclose(f);
     rc = map_pmem(p, PMEM_LEN);
   }
+  //printf("open %s\n", file_path);
   return rc;
 }
 
