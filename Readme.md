@@ -10,7 +10,7 @@ I made a cmake file so do the magic:
 ```
 mkdir build
 cd build
-cmake .. -CMAKE_BUILD_TYPE=
+cmake -DCMAKE_BUILD_TYPE=Release ..
 make
 ```
 The cmake supports Debug and Release mode, so set the -CMAKE_BUILD_TYPE accordingly.
@@ -18,8 +18,8 @@ The cmake supports Debug and Release mode, so set the -CMAKE_BUILD_TYPE accordin
 ## How to run tests
 Modify the permissions of the scripts:
 ```
-chmod u+x tatp/tatp.sh
 chmod u+x all.sh
+./all.sh
 ```
 Then use `./all.sh` to run the test
 
