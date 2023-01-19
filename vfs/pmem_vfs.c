@@ -493,8 +493,7 @@ static int pmem_sync(sqlite3_file *pFile, int flags){
   Persistent_File *p = (Persistent_File*)pFile;
   // p->sync_calls++;
   if(p->is_pmem){
-    pmem_persist(p->pmem_file, p->pmem_size);
-    return 0;
+    return pmem_deep_persist(p->pmem_file, p->pmem_size);
   }
   else{
     return pmem_msync(p->pmem_file, p->pmem_size);

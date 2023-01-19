@@ -8,9 +8,7 @@
 #include <thread>
 #include <fstream>
 
-#include "../../sqlite/sqlite3.h"
-#include "../../vfs/pmem_vfs.h"
-#include "../../vfs/pmem_wal_only_vfs.h"
+#include "../sqlite_helper.hpp"
 
 using namespace std;
 
@@ -70,36 +68,6 @@ private:
   std::discrete_distribution<int> dis_;
   std::minstd_rand gen_;
 };
-
-
-sqlite3* open_db(const char* path, string pmem){
-  sqlite3 *db;
-  int rc;
-  int flags = SQLITE_OPEN_CREATE | SQLITE_OPEN_READWRITE;
-  if(pmem == "PMem" || pmem == "pmem-nvme"){
-    sqlite3_vfs_register(sqlite3_pmem_vfs(), 0);
-    rc = sqlite3_open_v2(path, &db, flags, "PMem_VFS");
-  }
-  else if(pmem == "wal-only"){
-    sqlite3_vfs_register(sqlite3_pmem_wal_only_vfs(), 0);
-    rc = sqlite3_open_v2(path, &db, flags, "PMem_VFS_wal_only");
-  }
-  else{
-    rc = sqlite3_open_v2(path, &db, flags, "unix");
-  }
-  if(rc){cout <<"Open:\t" << rc << endl;}
-  rc = sqlite3_exec(db,"PRAGMA journal_mode=WAL", NULL,NULL,NULL);
-  if(rc){cout << "Pragma WAL not working: " << rc << endl;}
-  rc = sqlite3_exec(db,"PRAGMA synchronous=FULL", NULL,NULL,NULL);
-  if(rc){cout << "Pragma WAL not working: " << rc << endl;}
-  
-  return db;
-}
-
-void close_db(sqlite3* db){
-  int status = sqlite3_close_v2(db);
-  if(status){cout <<"Close:\t" << status << endl;}
-}
 
 
 int main(int argc, char **argv) {

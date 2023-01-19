@@ -1,10 +1,8 @@
 #include "cxxopts.hpp"
 #include "helpers.hpp"
 #include "../readfile.hpp"
-#include "../../sqlite/sqlite3.h"
+#include "../sqlite_helper.hpp"
 
-#include "../../vfs/pmem_vfs.h"
-#include "../../vfs/pmem_wal_only_vfs.h"
 
 using namespace std;
 
@@ -13,29 +11,6 @@ void exec(sqlite3* db, const string &stmnt, const string &query){
   if (rc != SQLITE_OK) {cout << "error querry: " << query << "\t" << rc << endl;}
 }
 
-sqlite3* open_db(const char* path, string pmem){
-  sqlite3 *db;
-  int rc;
-  int flags = SQLITE_OPEN_CREATE | SQLITE_OPEN_READWRITE;
-  if(pmem == "PMem" || pmem == "pmem-nvme"){
-    sqlite3_vfs_register(sqlite3_pmem_vfs(), 0);
-    rc = sqlite3_open_v2(path, &db, flags, "PMem_VFS");
-  }
-  else if(pmem == "wal-only"){
-    sqlite3_vfs_register(sqlite3_pmem_wal_only_vfs(), 0);
-    rc = sqlite3_open_v2(path, &db, flags, "PMem_VFS_wal_only");
-  }
-  else{
-    rc = sqlite3_open_v2(path, &db, flags, "unix");
-  }
-  if(rc){cout <<"Open:\t" << rc << endl;}
-  rc = sqlite3_exec(db,"PRAGMA journal_mode=WAL", NULL,NULL,NULL);
-  if(rc){cout << "Pragma WAL not working: " << rc << endl;}
-  rc = sqlite3_exec(db,"PRAGMA synchronous=FULL", NULL,NULL,NULL);
-  if(rc){cout << "Pragma WAL not working: " << rc << endl;}
-  
-  return db;
-}
 
 int main(int argc, char **argv) {
   cxxopts::Options options = ssb_options("ssb_sqlite3", "SSB on SQLite3");
@@ -104,8 +79,6 @@ int main(int argc, char **argv) {
     
   }
 
-  rc = sqlite3_close_v2(db);
-  if(rc){cout <<"Close:\t" << rc << endl;}
-
+  close_db(db);
   return 0;
 }
