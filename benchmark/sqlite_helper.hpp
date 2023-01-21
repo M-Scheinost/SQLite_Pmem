@@ -6,7 +6,8 @@ namespace std{
 
 sqlite3* open_db(const char* path, string pmem){
   sqlite3 *db;
-  int rc;
+  int rc = sqlite3_initialize();
+  if(rc){cout << "Init not working: " << rc << endl;}
   int flags = SQLITE_OPEN_CREATE | SQLITE_OPEN_READWRITE;
   if(pmem == "PMem" || pmem == "pmem-nvme"){
     sqlite3_vfs_register(sqlite3_pmem_vfs(), 0);
@@ -33,6 +34,8 @@ sqlite3* open_db(const char* path, string pmem){
 void close_db(sqlite3* db){
   int status = sqlite3_close_v2(db);
   if(status){cout <<"Close:\t" << status << endl;}
+  int rc = sqlite3_shutdown();
+  if(rc){cout << "Shutdown not working: " << rc << endl;}
 }
 
 } // namespace std
