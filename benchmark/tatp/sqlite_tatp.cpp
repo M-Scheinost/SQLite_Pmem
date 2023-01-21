@@ -47,17 +47,13 @@ public:
           if(rc){cout << "Prepare transaction_"<< i << "\t" << rc << endl;}
           stmts_.push_back(stmt);
         }
-        for(int i = 0; i < 5000000; i++){
+        for(int i = 0; i < 7000000; i++){
           next_value.push_back(procedure_generator_.next());
         }
         index = 0;
   }
 
   bool operator()() {
-    if(index >= next_value.size()){
-      index = 0;
-    }
-    //cout << index << endl;
     return std::visit(
         overloaded{
             [&](const dbbench::tatp::GetSubscriberData &p) {
