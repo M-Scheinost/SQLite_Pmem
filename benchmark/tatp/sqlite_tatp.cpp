@@ -409,7 +409,7 @@ int main (int argc, char** argv){
     ofstream result_file {"../../results/master_results.csv", ios::app};
     result_file <<"\"TATP\",\"SQLite\",\""
             << pmem
-            << "\",\"loading\""
+            << "\",\"loading\",\""
             << n_subscriber_records
             << "\",\""
             << time
@@ -432,7 +432,7 @@ int main (int argc, char** argv){
 
     result_file <<"\"TATP\",\"SQLite\",\""
                 << pmem
-                << "\",\"evaluation\""
+                << "\",\"evaluation\",\""
                 << n_subscriber_records
                 << "\",\""
                 << throughput

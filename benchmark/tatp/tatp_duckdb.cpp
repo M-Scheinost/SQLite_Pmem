@@ -218,7 +218,7 @@ int main(int argc, char **argv) {
 
     result_file <<"\"TATP\",\"DuckDB\",\""
                 << "none"
-                << "\",\"evaluation\""
+                << "\",\"evaluation\",\""
                 << n_subscriber_records
                 << "\",\""
                 << throughput

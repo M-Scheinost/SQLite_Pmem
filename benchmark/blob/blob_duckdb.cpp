@@ -92,7 +92,7 @@ int main(int argc, char **argv) {
 
     result_file <<"\"BLOB\",\"DuckDB\",\""
                 << "none"
-                << "\",\"evaluation\""
+                << "\",\"evaluation\",\""
                 << size
                 << "\",\""
                 << throughput

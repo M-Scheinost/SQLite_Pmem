@@ -70,7 +70,7 @@ int main(int argc, char **argv) {
                 << mask
                 << "\",\"SQLite\",\""
                 << pmem
-                << "\",\"evaluation\""
+                << "\",\"evaluation\",\""
                 << sf
                 << "\",\""
                 << time([&] { exec(db,sql,query); })

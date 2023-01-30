@@ -131,7 +131,7 @@ int main(int argc, char **argv) {
 
     result_file <<"\"BLOB\",\"SQLite\",\""
                 << pmem
-                << "\",\"evaluation\""
+                << "\",\"evaluation\",\""
                 << size
                 << "\",\""
                 << throughput

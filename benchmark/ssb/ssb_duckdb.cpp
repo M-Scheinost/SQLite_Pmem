@@ -73,7 +73,7 @@ int main(int argc, char **argv) {
       std::string sql = readfile("sql/" + query + ".sql");
       result_file <<"\"SSB\",\"DuckDB\",\""
                 << "none"
-                << "\",\"evaluation\""
+                << "\",\"evaluation\",\""
                 << sf
                 << "\",\""
                 << time([&] { assert_success(conn.Query(sql)); })
