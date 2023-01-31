@@ -1893,3 +1893,4 @@ ______________________________________________________
 "BLOB","DuckDB","none","evaluation"10000000","19.1667","tps","0.1",""
 "BLOB","DuckDB","none","evaluation"10000000","19.1333","tps","0.1",""
 "BLOB","DuckDB","none","evaluation"10000000","18.55","tps","0.1",""
+"TATP","SQLite","PMem","loading","10000000","529784","ms","","1"
