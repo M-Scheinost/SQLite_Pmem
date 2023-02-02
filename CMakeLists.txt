@@ -25,10 +25,10 @@ set(INSTALL_INC_DIR "${CMAKE_INSTALL_PREFIX}/include" CACHE PATH "Installation d
 set(CMAKE_C_STANDARD 11)
 # SET (CMAKE_C_COMPILER  "/usr/bin/gcc")
 set(CMAKE_C_STANDARD_REQUIRED ON)
-set(CMAKE_C_FLAGS_RELEASE "-DNDEBUG -O3")
-set(CMAKE_CXX_FLAGS_RELEASE "-DNDEBUG -O3")
-set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -O0 -D_GLIBC_DEBUG")
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -O0 -D_GLIBC_DEBUG")
+set(CMAKE_C_FLAGS_RELEASE "-DNDEBUG -O3 -march=native")
+set(CMAKE_CXX_FLAGS_RELEASE "-DNDEBUG -O3 -march=native")
+set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -O0 -D_GLIBC_DEBUG -march=native")
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -O0 -D_GLIBC_DEBUG -march=native")
 
 set(SQLITE_WIN_BUILD OFF)
 set(SQLITE_WINRT_BUILD OFF)
@@ -38,7 +38,7 @@ set(CMAKE_CXX_STANDARD 17)
 # ---------------------
 # Version detection
 # ---------------------
-file(STRINGS "${PROJECT_SOURCE_DIR}/sqlite/sqlite3.h" _sqlite_api_h_VER_STRING REGEX ".*#define[ ]+SQLITE_VERSION[ ]+")
+file(STRINGS "${PROJECT_SOURCE_DIR}/sqlite/sqlite/sqlite3.h" _sqlite_api_h_VER_STRING REGEX ".*#define[ ]+SQLITE_VERSION[ ]+")
 
 string(REGEX MATCH "[0-9\\.]+" SQLITE_VER_STRING ${_sqlite_api_h_VER_STRING})
 string(REGEX MATCHALL "[0-9]+" _sqlite_ver_LIST "${SQLITE_VER_STRING}")
@@ -152,9 +152,9 @@ set_target_properties(blob_duckdb PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CU
 
 # Scripts.
 configure_file(benchmark/scripts/duckdb_ssb.sh ${CMAKE_CURRENT_BINARY_DIR}/ssb/duckdb_ssb.sh COPYONLY)
-configure_file(benchmark/scripts/sqlite_ssb.sh ${CMAKE_CURRENT_BINARY_DIR}/ssb/sqlite_ssb.sh COPYONLY)
-configure_file(benchmark/scripts/sqlite_tatp.sh ${CMAKE_CURRENT_BINARY_DIR}/tatp/sqlite_tatp.sh COPYONLY)
+configure_file(benchmark/scripts/ssb.sh ${CMAKE_CURRENT_BINARY_DIR}/ssb/ssb.sh COPYONLY)
+configure_file(benchmark/scripts/tatp.sh ${CMAKE_CURRENT_BINARY_DIR}/tatp/tatp.sh COPYONLY)
 configure_file(benchmark/scripts/duckdb_tatp.sh ${CMAKE_CURRENT_BINARY_DIR}/tatp/duckdb_tatp.sh COPYONLY)
-configure_file(benchmark/scripts/sqlite_blob.sh ${CMAKE_CURRENT_BINARY_DIR}/blob/sqlite_blob.sh COPYONLY)
+configure_file(benchmark/scripts/blob.sh ${CMAKE_CURRENT_BINARY_DIR}/blob/blob.sh COPYONLY)
 configure_file(benchmark/scripts/duckdb_blob.sh ${CMAKE_CURRENT_BINARY_DIR}/blob/duckdb_blob.sh COPYONLY)
 configure_file(benchmark/scripts/all.sh ${CMAKE_CURRENT_BINARY_DIR}/all.sh COPYONLY)

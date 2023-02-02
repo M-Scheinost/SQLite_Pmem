@@ -1,4 +1,4 @@
-#include "../sqlite/sqlite3.h"
+#include "../sqlite/sqlite/sqlite3.h"
 #include "../vfs/pmem_vfs.h"
 
 namespace std{

@@ -1,6 +1,6 @@
 #ifndef PMEM_VFS_WAL_ONLY_H
 #define PMEM_VFS_WAL_ONLY_H
-#include "../sqlite/sqlite3.h"
+#include "../sqlite/sqlite/sqlite3.h"
 #include <libpmem.h>
 #include <libpmemlog.h>
 

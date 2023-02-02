@@ -120,7 +120,7 @@
 #include <sys/mman.h>
 #include <sys/stat.h>
 
-#include "../sqlite/sqlite3.h"
+#include "../sqlite/sqlite/sqlite3.h"
 
 
 /**

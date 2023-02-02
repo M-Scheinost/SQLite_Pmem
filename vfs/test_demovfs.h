@@ -1,6 +1,6 @@
 #ifndef DEMO_VFS_H
 #define DEMO_VFS_H
-#include "../sqlite/sqlite3.h"
+#include "../sqlite/sqlite/sqlite3.h"
 
 #include <assert.h>
 #include <string.h>
