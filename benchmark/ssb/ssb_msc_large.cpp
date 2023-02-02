@@ -66,9 +66,7 @@ int main(int argc, char **argv) {
     //cout << sql << endl;
 
     //std::cout << time([&] { conn.execute(sql).expect(SQLITE_OK); });
-    result_file <<"\"SSB-"
-                << mask
-                << "\",\"SQLite\",\"msc-large\",\""
+    result_file <<"\"SSB\",\"SQLite\",\"msc-large\",\""
                 << pmem
                 << "\",\"evaluation\",\""
                 << sf
