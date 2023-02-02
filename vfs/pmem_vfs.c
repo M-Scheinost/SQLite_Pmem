@@ -487,8 +487,8 @@ static int pmem_write (
 static int pmem_truncate(sqlite3_file *pFile, sqlite_int64 size){
   Persistent_File *p = (Persistent_File*)pFile;
   int rc = SQLITE_OK;
-  if(size * 1.5 < p->pmem_size || size > p->pmem_size){
-    rc = map_pmem(p, size * 1.5);
+  if(size * 1.25 < p->pmem_size || size > p->pmem_size){
+    rc = map_pmem(p, size * 1.25);
   }
   if(p->used_size > size){
     p->used_size = size;
