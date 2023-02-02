@@ -116,6 +116,10 @@ add_executable(tatp_msc_dense ${TATP_MSC_DENSE_MAIN_FILE})
 target_link_libraries(tatp_msc_dense ${VFS_FILES} msclogdense vfs Threads::Threads dbbench_tatp cxxopts pmem dl m)
 set_target_properties(tatp_msc_dense PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/tatp)
 
+add_executable(tatp_msc_large ${TATP_MSC_DENSE_MAIN_FILE})
+target_link_libraries(tatp_msc_large ${VFS_FILES} mscloglarge vfs Threads::Threads dbbench_tatp cxxopts pmem dl m)
+set_target_properties(tatp_msc_large PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/tatp)
+
 add_executable(tatp_duckdb ${TATP_DUCKDB_MAIN_FILE})
 target_include_directories(tatp_duckdb PRIVATE src)
 target_link_libraries(tatp_duckdb cxxopts dbbench_tatp duckdb)
