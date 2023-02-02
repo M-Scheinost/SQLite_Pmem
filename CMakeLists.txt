@@ -110,8 +110,11 @@ target_compile_options(sqlite3_shell PRIVATE -DSQLITE_THREADSAFE=0 -DSQLITE_OMIT
 
 add_executable(tatp_sqlite ${TATP_SQLITE_MAIN_FILE})
 target_link_libraries(tatp_sqlite ${VFS_FILES} sqlite vfs Threads::Threads dbbench_tatp cxxopts pmem dl m)
-set_target_properties(tatp_sqlite PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/tatp
-)
+set_target_properties(tatp_sqlite PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/tatp)
+
+add_executable(tatp_msc_dense ${TATP_MSC_DENSE_MAIN_FILE})
+target_link_libraries(tatp_msc_dense ${VFS_FILES} msclogdense vfs Threads::Threads dbbench_tatp cxxopts pmem dl m)
+set_target_properties(tatp_msc_dense PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/tatp)
 
 add_executable(tatp_duckdb ${TATP_DUCKDB_MAIN_FILE})
 target_include_directories(tatp_duckdb PRIVATE src)
@@ -124,10 +127,14 @@ set_target_properties(tatp_duckdb PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CU
 
 add_subdirectory(benchmark/ssb/dbgen)
 
-add_executable(ssb_sqlite3 ${SSB_SQLITE_MAIN_FILE})
 
+add_executable(ssb_sqlite3 ${SSB_SQLITE_MAIN_FILE})
 target_link_libraries(ssb_sqlite3 cxxopts sqlite ${VFS_FILES} pmem dl m Threads::Threads)
 set_target_properties(ssb_sqlite3 PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/ssb)
+
+add_executable(ssb_msc_dense ${SSB_MSC_DENSE_MAIN_FILE})
+target_link_libraries(ssb_msc_dense cxxopts msclogdense ${VFS_FILES} pmem dl m Threads::Threads)
+set_target_properties(ssb_msc_dense PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/ssb)
 
 add_executable(ssb_duckdb ${SSB_DUCKDB_MAIN_FILE})
 target_include_directories(ssb_duckdb PRIVATE src)
@@ -144,6 +151,11 @@ add_executable(blob_sqlite3 ${BLOB_SQLITE_MAIN_FILE})
 target_include_directories(blob_sqlite3 PRIVATE src src/systems/sqlite)
 target_link_libraries(blob_sqlite3 cxxopts sqlite dbbench_core ${VFS_FILES} pmem dl m Threads::Threads)
 set_target_properties(blob_sqlite3 PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/blob)
+
+add_executable(blob_msc_dense ${BLOB_MSC_DENSE_MAIN_FILE})
+target_include_directories(blob_msc_dense PRIVATE src src/systems/sqlite)
+target_link_libraries(blob_msc_dense cxxopts msclogdense dbbench_core ${VFS_FILES} pmem dl m Threads::Threads)
+set_target_properties(blob_msc_dense PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/blob)
 
 add_executable(blob_duckdb ${BLOB_DUCKDB_MAIN_FILE})
 target_include_directories(blob_duckdb PRIVATE src)
