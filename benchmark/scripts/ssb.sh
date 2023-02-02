@@ -31,6 +31,7 @@ for sf in 1 2 5; do
         printf "%s," "$trial"
         eval "$command"
       done
+      printf "\n"
     done
     rm $path*
   done
@@ -55,6 +56,7 @@ for sf in 1 2 5; do
       printf "%s," "$trial"
       eval "$command"
     done
+    printf "\n"
   done
   rm $path*
 
@@ -78,6 +80,7 @@ for sf in 1 2 5; do
       printf "%s," "$trial"
       eval "$command"
     done
+    printf "\n"
   done
   rm $path*
 
@@ -96,6 +99,7 @@ for sf in 1 2 5; do
       printf "%s," "$trial"
       eval "$command"
     done
+    printf "\n"
   done
 
   rm ssb.duckdb

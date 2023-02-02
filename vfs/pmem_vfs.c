@@ -350,8 +350,7 @@ static struct unix_syscall {
 typedef struct Persistent_File Persistent_File;
 
 struct Persistent_File {
- sqlite3_file base;                  /* Base class. Must be first. */
-
+  sqlite3_file base;                  /* Base class. Must be first. */
   const char* path;       /*path of the file*/
   int is_wal;             /*1 for wal file, 0 for database file*/
   int is_pmem;            /*1 if pmem, 0 otherwise*/
@@ -429,6 +428,7 @@ static int pmem_read(
 
   if(offset + buffer_size <= p->used_size){
     memcpy(buffer,&((char*)p->pmem_file)[offset], buffer_size);
+    return SQLITE_OK;
   }
   else{
     if(offset < p->used_size){
@@ -437,7 +437,6 @@ static int pmem_read(
     }
     return SQLITE_IOERR_SHORT_READ;
   }
-  return SQLITE_OK;
 }
 
 
@@ -483,10 +482,15 @@ static int pmem_write (
 }
 
 /*
-** Truncate a file. This is a no-op for this VFS (see header comments at
-** the top of the file).
+** Truncate a file to the dedicated size
 */
-inline static int pmem_truncate(sqlite3_file *pFile, sqlite_int64 size){
+static int pmem_truncate(sqlite3_file *pFile, sqlite_int64 size){
+  Persistent_File *p = (Persistent_File*)pFile;
+  int rc = map_pmem(p, size);
+  if(p->used_size > size){
+    p->used_size = size;
+  }
+  p->pmem_size = size;
   return SQLITE_OK;
 }
 
@@ -549,7 +553,7 @@ inline static int pmem_file_control(sqlite3_file *pFile, int op, void *pArg){
 */
 static int pmem_sector_size(sqlite3_file *pFile){
   /* 4096 is standard unix sector size*/
-  return 256;
+  return 64;
 }
 inline static int pmem_device_characteristics(sqlite3_file *pFile){
   // // printf("device characteristics\n");

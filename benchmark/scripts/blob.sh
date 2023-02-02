@@ -28,6 +28,7 @@ for sf in 100000 1000000 10000000; do
         printf "%s," "$trial"
         eval "$command"
       done
+      printf "\n"
     done
     rm $path*
   done
@@ -52,6 +53,7 @@ for sf in 100000 1000000 10000000; do
       printf "%s," "$trial"
       eval "$command"
     done
+    printf "\n"
   done
   rm $path*
 #---------------------------------------------
@@ -74,6 +76,7 @@ for sf in 100000 1000000 10000000; do
       printf "%s," "$trial"
       eval "$command"
     done
+    printf "\n"
   done
   rm $path*
 #---------------------------------------------
@@ -90,6 +93,7 @@ for sf in 100000 1000000 10000000; do
       printf "%s," "$trial"
       eval "$command"
     done
+    printf "\n"
   done
   rm blob.duckdb
 
