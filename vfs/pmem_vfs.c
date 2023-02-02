@@ -431,6 +431,10 @@ static int pmem_read(
     memcpy(buffer,&((char*)p->pmem_file)[offset], buffer_size);
   }
   else{
+    if(offset < p->used_size){
+      int size = p->used_size - offset;
+      memcpy(buffer, &((char*)p->pmem_file)[offset], size);
+    }
     return SQLITE_IOERR_SHORT_READ;
   }
   return SQLITE_OK;
