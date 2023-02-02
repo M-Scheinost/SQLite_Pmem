@@ -414,11 +414,11 @@ int main (int argc, char** argv){
     ofstream result_file {"../../results/master_results.csv", ios::app};
     result_file <<"\"TATP\",\"SQLite\",\""
             << pmem
-            << "\",\"loading\",\""
+            << "\",\"loading\",\"msc-large\",\""
             << n_subscriber_records
             << "\",\""
             << time
-            << "\",\"ms\",\"\",\"1\""
+            << "\",\"ms\",\"\",\"1\",\"\""
             << endl;
   }
 
@@ -435,13 +435,13 @@ int main (int argc, char** argv){
 
     ofstream result_file {"../../results/master_results.csv", ios::app};
 
-    result_file <<"\"TATP\",\"SQLite\",\""
+    result_file <<"\"TATP\",\"SQLite\",\"msc-large\",\""
                 << pmem
                 << "\",\"evaluation\",\""
                 << n_subscriber_records
                 << "\",\""
                 << throughput
-                << "\",\"tps\",\"\",\"1\""
+                << "\",\"tps\",\"\",\"1\",\"\""
                 << endl;
   }
   return 0;

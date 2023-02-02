@@ -1,1 +1,1 @@
-"benchmark","database","VFS","phase","scale_factor","value","unit","test-specific-info","threads"
+"benchmark","logging_algorithm","database","VFS","phase","scale_factor","value","unit","test-specific-info","threads","bloom_filter"    

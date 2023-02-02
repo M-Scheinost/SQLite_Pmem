@@ -216,13 +216,13 @@ int main(int argc, char **argv) {
 
     std::ofstream result_file {"../../results/master_results.csv", std::ios::app};
 
-    result_file <<"\"TATP\",\"DuckDB\",\""
+    result_file <<"\"TATP\",\"DuckDB\",\"DuckDB\",\""
                 << "none"
                 << "\",\"evaluation\",\""
                 << n_subscriber_records
                 << "\",\""
                 << throughput
-                << "\",\"tps\",\"\",\"1\""
+                << "\",\"tps\",\"\",\"1\",\"\""
                 << std::endl;
   }
 }

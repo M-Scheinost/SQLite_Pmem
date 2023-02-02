@@ -90,7 +90,7 @@ int main(int argc, char **argv) {
 
     std::ofstream result_file {"../../results/master_results.csv", std::ios::app};
 
-    result_file <<"\"BLOB\",\"DuckDB\",\""
+    result_file <<"\"BLOB\",\"DuckDB\",\"DuckDB\",\""
                 << "none"
                 << "\",\"evaluation\",\""
                 << size
@@ -98,7 +98,7 @@ int main(int argc, char **argv) {
                 << throughput
                 << "\",\"tps\",\""
                 << mix
-                << "\",\"\""
+                << "\",\"\",\"\""
                 << std::endl;
 
   }

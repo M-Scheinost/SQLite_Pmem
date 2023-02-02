@@ -68,7 +68,7 @@ int main(int argc, char **argv) {
     //std::cout << time([&] { conn.execute(sql).expect(SQLITE_OK); });
     result_file <<"\"SSB-"
                 << mask
-                << "\",\"SQLite\",\""
+                << "\",\"SQLite\",\"SQLite\",\""
                 << pmem
                 << "\",\"evaluation\",\""
                 << sf
@@ -76,7 +76,9 @@ int main(int argc, char **argv) {
                 << time([&] { exec(db,sql,query); })
                 << "\",\"s\",\""
                 << query
-                << "\",\"1\""
+                << "\",\"1\",\""
+                << result["bloom_filter"].as<bool>()
+                << "\""
                 << std::endl;
     
   }

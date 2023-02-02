@@ -71,7 +71,7 @@ int main(int argc, char **argv) {
          {"q1.1", "q1.2", "q1.3", "q2.1", "q2.2", "q2.3", "q3.1", "q3.2",
           "q3.3", "q3.4", "q4.1", "q4.2", "q4.3"}) {
       std::string sql = readfile("sql/" + query + ".sql");
-      result_file <<"\"SSB\",\"DuckDB\",\""
+      result_file <<"\"SSB\",\"DuckDB\",\"DuckDB\",\""
                 << "none"
                 << "\",\"evaluation\",\""
                 << sf
@@ -81,7 +81,7 @@ int main(int argc, char **argv) {
                 << query
                 << "\",\""
                 << threads
-                << "\""
+                << "\",\"\""
                 << std::endl;
     }
   }

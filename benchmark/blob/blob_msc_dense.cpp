@@ -133,7 +133,7 @@ int main(int argc, char **argv) {
 
     ofstream result_file {"../../results/master_results.csv", std::ios::app};
 
-    result_file <<"\"BLOB\",\"SQLite\",\""
+    result_file <<"\"BLOB\",\"SQLite\",\"msc-dense\",\""
                 << pmem
                 << "\",\"evaluation\",\""
                 << size
@@ -141,7 +141,7 @@ int main(int argc, char **argv) {
                 << throughput
                 << "\",\"tps\",\""
                 << mix
-                << "\",\"1\""
+                << "\",\"1\",\"\""
                 << endl;
 
      close_db(db);
