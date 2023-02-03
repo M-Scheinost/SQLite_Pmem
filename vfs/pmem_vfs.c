@@ -406,6 +406,7 @@ static int pmem_close(sqlite3_file *pFile){
   // printf("sync_calls: %s  %i\n", p->path, p->sync_calls);
   // printf("write_calls: %s  %i\n", p->path, p->write_calls);
   //fflush(stdout);
+  map_pmem(p, p->used_size);
   unmap_pmem(p);
   if(p->tmp){
     demoDelete(NULL, p->path, 1);

@@ -54,7 +54,7 @@ target_compile_options(
         -DSQLITE_OMIT_AUTOINIT
 )
 
-add_library(mscloglarge ${MSC_LOG_DENSE})
+add_library(mscloglarge ${MSC_LOG_LARGE})
 target_compile_options(
         mscloglarge
         PRIVATE
