@@ -21,6 +21,7 @@ int main(int argc, char **argv) {
         cxxopts::value<std::string>()->default_value("1GB"));
   adder("threads", "Number of threads", cxxopts::value<std::string>()->default_value("1"));
   adder("sf", "the scale factor", cxxopts::value<std::string>()->default_value("1"));
+  adder("path", "Path", cxxopts::value<std::string>()->default_value("/mnt/pmem0/scheinost/benchmark.db"));
 
   cxxopts::ParseResult result = options.parse(argc, argv);
 
@@ -32,8 +33,9 @@ int main(int argc, char **argv) {
   auto memory_limit = result["memory_limit"].as<std::string>();
   auto threads = result["threads"].as<std::string>();
   auto sf = result["sf"].as<std::string>();
+  std::string path = result["path"].as<std::string>();
 
-  duckdb::DuckDB db("ssb.duckdb");
+  duckdb::DuckDB db(path);
 
   if (result.count("load")) {
     duckdb::Connection conn(db);

@@ -82,12 +82,13 @@ for sf in 100000 1000000 10000000; do
 #---------------------------------------------
 #       duckdb
 #---------------------------------------------
+  path="/mnt/pmem0/scheinost/benchmark.db"
   printf "Loading data into DuckDB...\n"
-  ./blob_duckdb --load --size=$sf
+  ./blob_duckdb --load --size=$sf --path=$path
 
   printf "Evaluating DuckDB...\n"
   for mix in "0.9" "0.5" "0.1"; do
-    command="./blob_duckdb --run --size=$sf --mix=$mix"
+    command="./blob_duckdb --run --size=$sf --mix=$mix --path=$path"
     printf "%s\n" "$command"
     for trial in {1..3}; do
       printf "%s," "$trial"
@@ -95,6 +96,6 @@ for sf in 100000 1000000 10000000; do
     done
     printf "\n"
   done
-  rm blob.duckdb
+  rm $path*
 
 done

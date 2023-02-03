@@ -88,12 +88,13 @@ for sf in 1 2 5; do
 #---------------------------------------------
 #       duckdb
 #---------------------------------------------
+  path="/mnt/pmem0/scheinost/benchmark.db"  
   printf "Loading data into DuckDB...\n"
-  ./ssb_duckdb --load
+  ./ssb_duckdb --load --path=$path
 
   printf "Evaluating DuckDB...\n"
   for threads in 1 2 4; do
-    command="./ssb_duckdb --run --threads=$threads --sf=$sf"
+    command="./ssb_duckdb --run --threads=$threads --sf=$sf --path=$path"
     printf "%s\n" "$command"
     for trial in {1..3}; do
       printf "%s," "$trial"
@@ -102,5 +103,5 @@ for sf in 1 2 5; do
     printf "\n"
   done
 
-  rm ssb.duckdb
+  rm $path*
 done

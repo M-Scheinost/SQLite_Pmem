@@ -180,10 +180,9 @@ int main(int argc, char **argv) {
   cxxopts::Options options = tatp_options("tatp_duckdb", "TATP on DuckDB");
 
   cxxopts::OptionAdder adder = options.add_options("DuckDB");
-  adder("memory_limit", "Memory limit",
-        cxxopts::value<std::string>()->default_value("1GB"));
-  adder("threads", "Number of threads",
-        cxxopts::value<std::string>()->default_value("1"));
+  adder("memory_limit", "Memory limit",cxxopts::value<std::string>()->default_value("1GB"));
+  adder("threads", "Number of threads",cxxopts::value<std::string>()->default_value("1"));
+  adder("path", "Path", cxxopts::value<std::string>()->default_value("/mnt/pmem0/scheinost/benchmark.db"));
 
   cxxopts::ParseResult result = options.parse(argc, argv);
 
@@ -195,8 +194,9 @@ int main(int argc, char **argv) {
   auto n_subscriber_records = result["records"].as<uint64_t>();
   auto memory_limit = result["memory_limit"].as<std::string>();
   auto threads = result["threads"].as<std::string>();
+  std::string path = result["path"].as<std::string>();
 
-  duckdb::DuckDB db("tatp.duckdb");
+  duckdb::DuckDB db(path);
 
   if (result.count("load")) {
     load(db, n_subscriber_records);

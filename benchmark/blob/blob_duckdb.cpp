@@ -50,6 +50,10 @@ int main(int argc, char **argv) {
   cxxopts::Options options =
       blob_options("blob_duckdb", "Blob benchmark on DuckDB");
 
+      
+  cxxopts::OptionAdder adder = options.add_options("DuckDB");
+  adder("path", "Path", cxxopts::value<std::string>()->default_value("/mnt/pmem0/scheinost/benchmark.db"));
+
   auto result = options.parse(argc, argv);
 
   if (result.count("help")) {
@@ -59,8 +63,9 @@ int main(int argc, char **argv) {
 
   auto size = result["size"].as<size_t>();
   auto mix = result["mix"].as<float>();
+  std::string path = result["path"].as<std::string>();
 
-  duckdb::DuckDB db("blob.duckdb");
+  duckdb::DuckDB db(path);
 
   if (result.count("load")) {
     duckdb::Connection conn(db);
