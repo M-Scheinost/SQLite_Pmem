@@ -156,17 +156,14 @@ file(COPY benchmark/ssb/sql DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/ssb)
 #----------------------------------------------
 
 add_executable(blob_sqlite3 ${BLOB_SQLITE_MAIN_FILE})
-target_include_directories(blob_sqlite3 PRIVATE src src/systems/sqlite)
 target_link_libraries(blob_sqlite3 cxxopts sqlite dbbench_core ${VFS_FILES} pmem dl m Threads::Threads)
 set_target_properties(blob_sqlite3 PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/blob)
 
 add_executable(blob_msc_dense ${BLOB_MSC_DENSE_MAIN_FILE})
-target_include_directories(blob_msc_dense PRIVATE src src/systems/sqlite)
 target_link_libraries(blob_msc_dense cxxopts msclogdense dbbench_core ${VFS_FILES} pmem dl m Threads::Threads)
 set_target_properties(blob_msc_dense PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/blob)
 
 add_executable(blob_msc_large ${BLOB_MSC_LARGE_MAIN_FILE})
-target_include_directories(blob_msc_large PRIVATE src src/systems/sqlite)
 target_link_libraries(blob_msc_large cxxopts mscloglarge dbbench_core ${VFS_FILES} pmem dl m Threads::Threads)
 set_target_properties(blob_msc_large PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/blob)
 

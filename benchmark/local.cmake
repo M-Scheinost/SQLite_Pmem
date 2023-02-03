@@ -21,7 +21,7 @@ set(SSB_DUCKDB_MAIN_FILE  ${CMAKE_SOURCE_DIR}/benchmark/ssb/ssb_duckdb.cpp)
 
 
 set(BLOB_SQLITE_MAIN_FILE  ${CMAKE_SOURCE_DIR}/benchmark/blob/blob_sqlite3.cpp)
-set(BLOB_MSC_DENSE_MAIN_FILE  ${CMAKE_SOURCE_DIR}/benchmark/blob/blob_sqlite3.cpp)
-set(BLOB_MSC_LARGE_MAIN_FILE  ${CMAKE_SOURCE_DIR}/benchmark/blob/blob_sqlite3.cpp)
+set(BLOB_MSC_DENSE_MAIN_FILE  ${CMAKE_SOURCE_DIR}/benchmark/blob/blob_msc_dense.cpp)
+set(BLOB_MSC_LARGE_MAIN_FILE  ${CMAKE_SOURCE_DIR}/benchmark/blob/blob_msc_large.cpp)
 set(BLOB_DUCKDB_MAIN_FILE  ${CMAKE_SOURCE_DIR}/benchmark/blob/blob_duckdb.cpp)
 
