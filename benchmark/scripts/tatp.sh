@@ -13,6 +13,7 @@ for sf in 10000 100000 1000000 10000000; do
     else
       path+="benchmark.db"
     fi
+    path="/mnt/pmem0/scheinost/benchmark.db"
     [ ! -e $path ] || rm $path*
 
     printf "Loading data into SQLite3 Pmem=$pm\n"

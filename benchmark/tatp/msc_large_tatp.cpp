@@ -412,9 +412,9 @@ int main (int argc, char** argv){
     close_db(db);
     
     ofstream result_file {"../../results/master_results.csv", ios::app};
-    result_file <<"\"TATP\",\"SQLite\",\""
+    result_file <<"\"TATP\",\"SQLite\",\"msc-large\",\""
             << pmem
-            << "\",\"loading\",\"msc-large\",\""
+            << "\",\"loading\",\""
             << n_subscriber_records
             << "\",\""
             << time
