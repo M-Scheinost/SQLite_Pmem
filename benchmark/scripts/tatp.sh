@@ -6,13 +6,6 @@ for sf in 10000 100000 1000000 10000000; do
   #---------------------------------------------
   for pm in "PMem" "unix"; do
     printf "*** TATP (scale factor $sf ) ***\n"
-    path=""
-    if [ "$pm" = "PMem" ]
-    then
-      path+="/mnt/pmem0/scheinost/benchmark.db"
-    else
-      path+="benchmark.db"
-    fi
     path="/mnt/pmem0/scheinost/benchmark.db"
     [ ! -e $path ] || rm $path*
 

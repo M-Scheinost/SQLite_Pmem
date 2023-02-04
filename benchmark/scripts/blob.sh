@@ -8,13 +8,7 @@ for sf in 100000 1000000 10000000; do
   for pm in "PMem" "unix"; do
     printf "*** Blob benchmark (scale factor %s) ***\n" "$sf"
 
-    path=""
-    if [ "$pm" = "PMem" ]
-    then
-      path+="/mnt/pmem0/scheinost/benchmark.db"
-    else
-      path+="benchmark.db"
-    fi
+    path="/mnt/pmem0/scheinost/benchmark.db"
     [ ! -e $path ] || rm $path*
 
     printf "Loading data into SQLite3...\n"

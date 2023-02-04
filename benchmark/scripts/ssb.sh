@@ -11,13 +11,7 @@ for sf in 1 2 5; do
   for pm in "PMem" "unix"; do
   printf "*** SSB (scale factor %s) ***\n" "$sf"
 
-  path=""
-    if [ "$pm" = "PMem" ]
-    then
-      path+="/mnt/pmem0/scheinost/benchmark.db"
-    else
-      path+="benchmark.db"
-    fi
+  path="/mnt/pmem0/scheinost/benchmark.db"
     [ ! -e $path ] || rm $path*
 
   printf "Loading data into SQLite3...\n"

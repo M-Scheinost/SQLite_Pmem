@@ -180,3 +180,4 @@ configure_file(benchmark/scripts/duckdb_tatp.sh ${CMAKE_CURRENT_BINARY_DIR}/tatp
 configure_file(benchmark/scripts/blob.sh ${CMAKE_CURRENT_BINARY_DIR}/blob/blob.sh COPYONLY)
 configure_file(benchmark/scripts/duckdb_blob.sh ${CMAKE_CURRENT_BINARY_DIR}/blob/duckdb_blob.sh COPYONLY)
 configure_file(benchmark/scripts/all.sh ${CMAKE_CURRENT_BINARY_DIR}/all.sh COPYONLY)
+configure_file(benchmark/scripts/unix.sh ${CMAKE_CURRENT_BINARY_DIR}/unix.sh COPYONLY)
