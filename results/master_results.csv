@@ -6434,3 +6434,7 @@ ______________________________________________________
 			Unix cache=1gb
 ______________________________________________________
 "TATP","SQLite","SQLite","unix","loading","10000","132","ms","","1",""
+"TATP","SQLite","msc-dense","PMem","loading","10000","1122","ms","","1",""
+"TATP","SQLite","msc-dense","PMem","loading","10000","1185","ms","","1",""
+"TATP","SQLite","msc-dense","PMem","loading","10000","1184","ms","","1",""
+"TATP","SQLite","msc-dense","PMem","loading","10000","1148","ms","","1",""
