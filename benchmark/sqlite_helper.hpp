@@ -19,12 +19,12 @@ sqlite3* open_db(const char* path, string pmem){
   if(rc){cout <<"Open:\t" << rc << endl;}
   rc = sqlite3_exec(db,"PRAGMA journal_mode=WAL", NULL,NULL,NULL);
   if(rc){cout << "Pragma WAL not working: " << rc << endl;}
-  rc = sqlite3_exec(db,"PRAGMA synchronous=NORMAL", NULL,NULL,NULL);
+  rc = sqlite3_exec(db,"PRAGMA synchronous=FULL", NULL,NULL,NULL);
   if(rc){cout << "Pragma synchronous not working: " << rc << endl;}
 
   // rc = sqlite3_exec(db,"PRAGMA mmap_size=0", NULL,NULL,NULL);
   // if(rc){cout << "Pragma mmap_size not working: " << rc << endl;}
-  rc = sqlite3_exec(db,"PRAGMA cache_size=-1049000", NULL,NULL,NULL);
+  rc = sqlite3_exec(db,"PRAGMA cache_size=0", NULL,NULL,NULL);
   //rc = sqlite3_exec(db,"PRAGMA cache_size=0", NULL,NULL,NULL);
   if(rc){cout << "Pragma cache_size not working: " << rc << endl;}
   

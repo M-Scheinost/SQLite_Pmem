@@ -1,5 +1,4 @@
 #!/bin/bash
-
 for sf in 1 2 5; do
   printf "Generating data...\n"
   rm -f ./*.tbl
@@ -23,6 +22,7 @@ for sf in 1 2 5; do
       printf "%s\n" "$command"
       for trial in {1..3}; do
         printf "%s," "$trial"
+        [ ! -e $path-shm ] || rm $path-*
         eval "$command"
       done
       printf "\n"
@@ -46,7 +46,7 @@ for sf in 1 2 5; do
     command="./ssb_msc_dense --bloom_filter=$bloom_filter --sf=$sf --path=$path --pmem=$pm"
     printf "%s\n" "$command"
     for trial in {1..3}; do
-      [ ! -e $path-shm ] || rm $path-shm
+      [ ! -e $path-shm ] || rm $path-*
       printf "%s," "$trial"
       eval "$command"
     done
@@ -70,7 +70,8 @@ for sf in 1 2 5; do
     command="./ssb_msc_large --bloom_filter=$bloom_filter --sf=$sf --path=$path --pmem=$pm"
     printf "%s\n" "$command"
     for trial in {1..3}; do
-      [ ! -e $path-shm ] || rm $path-shm
+      [ ! -e $path-shm ] || rm $path-*
+
       printf "%s," "$trial"
       eval "$command"
     done
