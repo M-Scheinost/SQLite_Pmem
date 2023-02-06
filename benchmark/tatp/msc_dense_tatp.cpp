@@ -361,9 +361,7 @@ void load_db(sqlite3 *db, size_t db_size){
 
   rc = sqlite3_exec(db, "COMMIT;", NULL,NULL,NULL);
   if(rc){cout <<"load commit: " << stat << endl;}
-
-  rc = sqlite3_wal_checkpoint_v2(db, NULL, SQLITE_CHECKPOINT_FULL, NULL, NULL);
-  if(rc){cout <<"WAL-Checkpoint: " << rc << endl;}
+  
   
   rc = sqlite3_finalize(call_forwarding);
   if(rc){cout <<"CFR_step:\t" << rc << endl;}

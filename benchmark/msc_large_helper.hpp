@@ -32,9 +32,14 @@ sqlite3* open_db(const char* path, string pmem){
 
 
 void close_db(sqlite3* db){
-  int status = sqlite3_close_v2(db);
-  if(status){cout <<"Close:\t" << status << endl;}
-  int rc = sqlite3_shutdown();
+  int rc;
+  int *frames;
+  rc = sqlite3_wal_checkpoint_v2(db, NULL, SQLITE_CHECKPOINT_TRUNCATE, NULL, frames);
+  if(rc){cout <<"WAL-Checkpoint: " << rc << endl;}
+
+  rc = sqlite3_close_v2(db);
+  if(rc){cout <<"Close:\t" << rc << endl;}
+  rc = sqlite3_shutdown();
   if(rc){cout << "Shutdown not working: " << rc << endl;}
 }
 
