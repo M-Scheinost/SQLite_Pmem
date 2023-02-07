@@ -129,7 +129,9 @@ int main(int argc, char **argv) {
 
     ofstream result_file {"../../results/master_results.csv", std::ios::app};
 
-    result_file <<"\"BLOB\",\"SQLite\",\"SQLite\",\""
+    result_file <<<"\"BLOB\",\"SQLite\",\""
+                << pmem
+                << "\",\""
                 << pmem
                 << "\",\"evaluation\",\""
                 << size

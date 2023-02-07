@@ -1,4 +1,4 @@
-"benchmark","logging_algorithm","database","VFS","phase","scale_factor","value","unit","test-specific-info","threads","bloom_filter"
+"benchmark","database","logging_algorithm","VFS","phase","scale_factor","value","unit","test-specific-info","threads","bloom_filter"
 "SSB","SQLite","SQLite","PMem","evaluation","1","0.541129","s","q1.1","1","0"
 "SSB","SQLite","SQLite","PMem","evaluation","1","0.449495","s","q1.2","1","0"
 "SSB","SQLite","SQLite","PMem","evaluation","1","0.402485","s","q1.3","1","0"
