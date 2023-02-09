@@ -1,6 +1,8 @@
 #!/bin/bash
 
 memlimit="-48828"
+path="/mnt/pmem0/scheinost/benchmark.db"
+[ ! -e $path ] || rm $path*
 for sf in 1 2 5; do
   printf "Generating data...\n"
   rm -f ./*.tbl
@@ -10,24 +12,15 @@ for sf in 1 2 5; do
   #       sqlite
   #---------------------------------------------
   for pm in "PMem" "unix"; do
-  printf "*** SSB (scale factor %s) ***\n" "$sf"
 
-  path="/mnt/pmem0/scheinost/benchmark.db"
-    [ ! -e $path ] || rm $path*
-
-  printf "Loading data into SQLite3...\n"
   ../sqlite3_shell $path <sql/init/sqlite3.sql
 
-  printf "Evaluating SQLite3...\n"
   for bloom_filter in "false" "true"; do
       command="./ssb_sqlite3 --bloom_filter=$bloom_filter --sf=$sf --path=$path --pmem=$pm --cache_size=$memlimit"
-      printf "%s\n" "$command"
       for trial in {1..3}; do
-        printf "%s," "$trial"
         [ ! -e $path-shm ] || rm $path-*
         eval "$command"
       done
-      printf "\n"
     done
     rm $path*
   done
@@ -35,69 +28,42 @@ for sf in 1 2 5; do
 #---------------------------------------------
 #       msc-dense
 #---------------------------------------------
-  printf "*** SSB (scale factor %s) ***\n" "$sf"
   pm="PMem"
-  path="/mnt/pmem0/scheinost/benchmark.db"  
-  [ ! -e $path ] || rm $path*
-
-  printf "Loading data into SQLite3...\n"
   ../sqlite3_shell $path <sql/init/sqlite3.sql
 
-  printf "Evaluating SQLite3...\n"
   for bloom_filter in "false" "true"; do
     command="./ssb_msc_dense --bloom_filter=$bloom_filter --sf=$sf --path=$path --pmem=$pm --cache_size=$memlimit"
-    printf "%s\n" "$command"
     for trial in {1..3}; do
       [ ! -e $path-shm ] || rm $path-*
-      printf "%s," "$trial"
       eval "$command"
     done
-    printf "\n"
   done
   rm $path*
 
 #---------------------------------------------
 #       msc-large
 #---------------------------------------------
-  printf "*** SSB (scale factor %s) ***\n" "$sf"
   pm="PMem"
-  path="/mnt/pmem0/scheinost/benchmark.db"  
-  [ ! -e $path ] || rm $path*
-
-  printf "Loading data into SQLite3...\n"
   ../sqlite3_shell $path <sql/init/sqlite3.sql
 
-  printf "Evaluating SQLite3...\n"
   for bloom_filter in "false" "true"; do
     command="./ssb_msc_large --bloom_filter=$bloom_filter --sf=$sf --path=$path --pmem=$pm --cache_size=$memlimit"
-    printf "%s\n" "$command"
     for trial in {1..3}; do
       [ ! -e $path-shm ] || rm $path-*
-
-      printf "%s," "$trial"
       eval "$command"
     done
-    printf "\n"
   done
   rm $path*
-
 
 #---------------------------------------------
 #       duckdb
 #---------------------------------------------
-  path="/mnt/pmem0/scheinost/benchmark.db"  
-  printf "Loading data into DuckDB...\n"
   ./ssb_duckdb --load --path=$path
 
-  printf "Evaluating DuckDB...\n"
-   threads="1"
-    command="./ssb_duckdb --run --threads=$threads --sf=$sf --path=$path --memory_limit=200MB"
-    printf "%s\n" "$command"
-    for trial in {1..3}; do
-      printf "%s," "$trial"
-      eval "$command"
-    done
-    printf "\n"
-
+  threads="1"
+  command="./ssb_duckdb --run --threads=$threads --sf=$sf --path=$path --memory_limit=200MB"
+  for trial in {1..3}; do
+    eval "$command"
+  done
   rm $path*
 done

@@ -20,8 +20,6 @@ int main(int argc, char **argv) {
   adder("memory_limit", "Memory limit",
         cxxopts::value<std::string>()->default_value("1GB"));
   adder("threads", "Number of threads", cxxopts::value<std::string>()->default_value("1"));
-  adder("sf", "the scale factor", cxxopts::value<std::string>()->default_value("1"));
-  adder("path", "Path", cxxopts::value<std::string>()->default_value("/mnt/pmem0/scheinost/benchmark.db"));
 
   cxxopts::ParseResult result = options.parse(argc, argv);
 
@@ -44,13 +42,10 @@ int main(int argc, char **argv) {
     assert_success(conn.Query(sql));
 
     assert_success(conn.Query("COPY part FROM 'part.tbl' (AUTO_DETECT TRUE)"));
-    assert_success(
-        conn.Query("COPY supplier FROM 'supplier.tbl' (AUTO_DETECT TRUE)"));
-    assert_success(
-        conn.Query("COPY customer FROM 'customer.tbl' (AUTO_DETECT TRUE)"));
+    assert_success(conn.Query("COPY supplier FROM 'supplier.tbl' (AUTO_DETECT TRUE)"));
+    assert_success(conn.Query("COPY customer FROM 'customer.tbl' (AUTO_DETECT TRUE)"));
     assert_success(conn.Query("COPY date FROM 'date.tbl' (AUTO_DETECT TRUE)"));
-    assert_success(
-        conn.Query("COPY lineorder FROM 'lineorder.tbl' (AUTO_DETECT TRUE)"));
+    assert_success(conn.Query("COPY lineorder FROM 'lineorder.tbl' (AUTO_DETECT TRUE)"));
   }
 
   if (result.count("run")) {
