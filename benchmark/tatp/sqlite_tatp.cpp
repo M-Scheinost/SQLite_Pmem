@@ -47,7 +47,7 @@ public:
           if(rc){cout << "Prepare transaction_"<< i << "\t" << rc << endl;}
           stmts_.push_back(stmt);
         }
-        for(int i = 0; i < 7000000; i++){
+        for(int i = 0; i < 20000000; i++){
           next_value.push_back(procedure_generator_.next());
         }
         index = 0;
@@ -384,6 +384,7 @@ int main (int argc, char** argv){
   adder("cache_size", "Cache size", cxxopts::value<std::string>()->default_value("-1000000"));
   adder("path", "Path", cxxopts::value<std::string>()->default_value("/mnt/pmem0/scheinost/benchmark.db"));
   adder("pmem", "Pmem", cxxopts::value<std::string>()->default_value("PMem"));
+  adder("sync", "Pmem", cxxopts::value<std::string>()->default_value("FULL"));
 
   cxxopts::ParseResult result = options.parse(argc, argv);
 
@@ -397,6 +398,7 @@ int main (int argc, char** argv){
   string cache_size = result["cache_size"].as<std::string>();
   string path = result["path"].as<std::string>();
   string pmem = result["pmem"].as<string>();
+  string sync = result["sync"].as<string>();
 
   if (result.count("load")) {
     sqlite3 *db = open_db(path.c_str(), pmem);
@@ -404,7 +406,7 @@ int main (int argc, char** argv){
     load_db_1(db, n_subscriber_records);
     auto end = chrono::steady_clock::now();
     auto time = chrono::duration_cast<chrono::milliseconds>(end - start).count();
-    close_db(db);
+    
     
     ofstream result_file {"../../results/master_results.csv", ios::app};
     result_file <<"\"TATP\",\"SQLite\",\""
@@ -417,19 +419,18 @@ int main (int argc, char** argv){
             << time
             << "\",\"ms\",\"\",\"1\",\"\""
             << endl;
+    close_db(db);
   }
 
   if (result.count("run")) {
     int rc;
     std::vector<Worker> workers;
-    sqlite3 *db = open_db(path.c_str(), pmem);
+    sqlite3 *db = open_db(path.c_str(), pmem, sync, cache_size);
 
     workers.emplace_back(db, n_subscriber_records);
 
     double throughput = dbbench::run(workers, result["warmup"].as<size_t>(),result["measure"].as<size_t>());
-    std::cout << throughput << std::endl;
     close_db(db);
-
     ofstream result_file {"../../results/master_results.csv", ios::app};
 
     result_file <<"\"TATP\",\"SQLite\",\""

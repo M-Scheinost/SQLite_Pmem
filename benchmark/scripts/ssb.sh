@@ -1,4 +1,6 @@
 #!/bin/bash
+
+memlimit="-48828"
 for sf in 1 2 5; do
   printf "Generating data...\n"
   rm -f ./*.tbl
@@ -18,7 +20,7 @@ for sf in 1 2 5; do
 
   printf "Evaluating SQLite3...\n"
   for bloom_filter in "false" "true"; do
-      command="./ssb_sqlite3 --bloom_filter=$bloom_filter --sf=$sf --path=$path --pmem=$pm"
+      command="./ssb_sqlite3 --bloom_filter=$bloom_filter --sf=$sf --path=$path --pmem=$pm --cach_size=$memlimit"
       printf "%s\n" "$command"
       for trial in {1..3}; do
         printf "%s," "$trial"
@@ -43,7 +45,7 @@ for sf in 1 2 5; do
 
   printf "Evaluating SQLite3...\n"
   for bloom_filter in "false" "true"; do
-    command="./ssb_msc_dense --bloom_filter=$bloom_filter --sf=$sf --path=$path --pmem=$pm"
+    command="./ssb_msc_dense --bloom_filter=$bloom_filter --sf=$sf --path=$path --pmem=$pm --cach_size=$memlimit"
     printf "%s\n" "$command"
     for trial in {1..3}; do
       [ ! -e $path-shm ] || rm $path-*
@@ -67,7 +69,7 @@ for sf in 1 2 5; do
 
   printf "Evaluating SQLite3...\n"
   for bloom_filter in "false" "true"; do
-    command="./ssb_msc_large --bloom_filter=$bloom_filter --sf=$sf --path=$path --pmem=$pm"
+    command="./ssb_msc_large --bloom_filter=$bloom_filter --sf=$sf --path=$path --pmem=$pm --cach_size=$memlimit"
     printf "%s\n" "$command"
     for trial in {1..3}; do
       [ ! -e $path-shm ] || rm $path-*
@@ -89,7 +91,7 @@ for sf in 1 2 5; do
 
   printf "Evaluating DuckDB...\n"
   for threads in 1 2 4; do
-    command="./ssb_duckdb --run --threads=$threads --sf=$sf --path=$path"
+    command="./ssb_duckdb --run --threads=$threads --sf=$sf --path=$path --memory_limit=200MB"
     printf "%s\n" "$command"
     for trial in {1..3}; do
       printf "%s," "$trial"

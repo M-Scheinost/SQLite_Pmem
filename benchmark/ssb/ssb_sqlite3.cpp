@@ -24,11 +24,15 @@ int main(int argc, char **argv) {
   adder("path", "Path", cxxopts::value<std::string>()->default_value("/mnt/pmem0/scheinost/benchmark.db"));
   adder("sf", "the scale factor", cxxopts::value<std::string>()->default_value("1"));
   adder("pmem", "Pmem", cxxopts::value<std::string>()->default_value("PMem"));
+  adder("cache_size", "Cache size", cxxopts::value<std::string>()->default_value("0"));
+  adder("sync", "Pmem", cxxopts::value<std::string>()->default_value("FULL"));
 
   cxxopts::ParseResult result = options.parse(argc, argv);
 
   std::string path = result["path"].as<std::string>();
   std::string pmem = result["pmem"].as<string>();
+  std::string sync = result["sync"].as<string>();
+  std::string cache_size = result["cache_size"].as<string>();
   auto sf = result["sf"].as<std::string>();
 
 
@@ -37,7 +41,7 @@ int main(int argc, char **argv) {
     return 0;
   }
 
-  sqlite3* db = open_db(path.c_str(), pmem);
+  sqlite3* db = open_db(path.c_str(), pmem, sync, cache_size);
 
   uint64_t mask = result["bloom_filter"].as<bool>() ? 0 : 0x00080000;
   int rc = sqlite3_test_control(SQLITE_TESTCTRL_OPTIMIZATIONS, db,mask);

@@ -2,10 +2,12 @@
 #include "dbbench/benchmarks/tatp.hpp"
 #include "dbbench/runner.hpp"
 #include "helpers.hpp"
+#include <chrono>
 #include "../../duckdb/duckdb.hpp"
 
 #include <fstream>
 
+using namespace std;
 template <class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
 template <class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
 
@@ -199,7 +201,20 @@ int main(int argc, char **argv) {
   duckdb::DuckDB db(path);
 
   if (result.count("load")) {
+    auto start = chrono::steady_clock::now();
     load(db, n_subscriber_records);
+    auto end = chrono::steady_clock::now();
+    auto time = chrono::duration_cast<chrono::milliseconds>(end - start).count();
+
+    ofstream result_file {"../../results/master_results.csv", ios::app};
+    result_file <<"\"TATP\",\"DuckDB\",\"DuckDB\",\""
+            << "none"
+            << "\",\"loading\",\""
+            << n_subscriber_records
+            << "\",\""
+            << time
+            << "\",\"ms\",\"\",\"1\",\"\""
+            << endl;
   }
 
   if (result.count("run")) {

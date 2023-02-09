@@ -53,7 +53,7 @@ public:
       if(rc){cout << "step: " << rc << endl;}
 
       rc = sqlite3_exec(db, "COMMIT;", NULL,NULL,NULL);
-      if(rc){cout <<"load commit: " << stat << endl;}
+      if(rc){cout <<"commit: " << stat << endl;}
     }
 
     return true;
@@ -76,7 +76,9 @@ int main(int argc, char **argv) {
   cxxopts::OptionAdder adder = options.add_options("SQLite3");
   adder("path", "Path", cxxopts::value<std::string>()->default_value("/mnt/pmem0/scheinost/benchmark.db"));
   adder("pmem", "Pmem", cxxopts::value<std::string>()->default_value("PMem"));
-
+    adder("cache_size", "Cache size", cxxopts::value<std::string>()->default_value("-1000000"));
+  adder("sync", "Pmem", cxxopts::value<std::string>()->default_value("FULL"));
+  
   auto result = options.parse(argc, argv);
 
   if (result.count("help")) {
@@ -129,7 +131,7 @@ int main(int argc, char **argv) {
 
     ofstream result_file {"../../results/master_results.csv", std::ios::app};
 
-    result_file <<<"\"BLOB\",\"SQLite\",\""
+    result_file <<"\"BLOB\",\"SQLite\",\""
                 << pmem
                 << "\",\""
                 << pmem

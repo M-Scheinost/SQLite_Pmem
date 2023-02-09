@@ -69,6 +69,7 @@
         "stop_token": "cpp",
         "thread": "cpp",
         "variant": "cpp",
-        "semaphore": "cpp"
+        "semaphore": "cpp",
+        "filesystem": "cpp"
     }
 }
