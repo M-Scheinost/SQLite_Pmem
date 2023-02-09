@@ -462,7 +462,7 @@ static int pmem_write (
     map_pmem(p, p->pmem_size * GROW_FACTOR_FILE);
   }
       /* automatically flushes data to pmem no extra call needed*/
-      //pmem_memcpy(p->pmem_file + offset, buffer, buffer_size, PMEM_F_MEM_NONTEMPORAL);
+    //pmem_memcpy(p->pmem_file + offset, buffer, buffer_size, 0);
   
    // if(p->is_pmem){
    //     //pmem_memcpy(&((char*)p->pmem_file)[offset],buffer, buffer_size, 0);
@@ -502,7 +502,6 @@ static int pmem_truncate(sqlite3_file *pFile, sqlite_int64 size){
 */
 static int pmem_sync(sqlite3_file *pFile, int flags){
   Persistent_File *p = (Persistent_File*)pFile;
-  //return 0;
   // p->sync_calls++;
   if(p->is_pmem){
     return pmem_deep_persist(p->pmem_file, p->pmem_size);

@@ -30,6 +30,34 @@ sqlite3* open_db(const char* path, string pmem){
   return db;
 }
 
+sqlite3* open_db(const char* path, string pmem, string sync, string cache){
+  sqlite3 *db;
+  int rc = sqlite3_initialize();
+  if(rc){cout << "Init not working: " << rc << endl;}
+  int flags = SQLITE_OPEN_CREATE | SQLITE_OPEN_READWRITE;
+  if(pmem == "PMem" || pmem == "pmem-nvme"){
+    sqlite3_vfs_register(sqlite3_pmem_vfs(), 0);
+    rc = sqlite3_open_v2(path, &db, flags, "PMem_VFS");
+  }
+  else{
+    rc = sqlite3_open_v2(path, &db, flags, "unix");
+  }
+  if(rc){cout <<"Open:\t" << rc << endl;}
+  rc = sqlite3_exec(db,"PRAGMA journal_mode=WAL", NULL,NULL,NULL);
+  if(rc){cout << "Pragma WAL not working: " << rc << endl;}
+  string s = "PRAGMA synchronous=" + sync;
+  rc = sqlite3_exec(db,s.c_str(), NULL,NULL,NULL);
+  if(rc){cout << "Pragma synchronous not working: " << rc << endl;}
+
+  // rc = sqlite3_exec(db,"PRAGMA mmap_size=0", NULL,NULL,NULL);
+  // if(rc){cout << "Pragma mmap_size not working: " << rc << endl;}
+  s = "PRAGMA cache_size=" + cache;
+  rc = sqlite3_exec(db,s.c_str(), NULL,NULL,NULL);
+  //rc = sqlite3_exec(db,"PRAGMA cache_size=0", NULL,NULL,NULL);
+  if(rc){cout << "Pragma cache_size not working: " << rc << endl;}
+  return db;
+}
+
 
 void close_db(sqlite3* db){
   int rc;

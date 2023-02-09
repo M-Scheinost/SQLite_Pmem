@@ -13,7 +13,7 @@ for sf in 10000 100000 1000000 10000000; do
     ./tatp_sqlite --load --records=$sf --path=$path --pmem=$pm --cach_size=$memlimit
 
     printf "Evaluating Pmem=$pm\n"
-      command="./tatp_sqlite --run --records=$sf --path=$path --pmem=$pm --cach_size=$memlimit" 
+      command="./tatp_sqlite --run --records=$sf --path=$path --pmem=$pm --cache_size=$memlimit" 
       printf "%s\n" "$command"
       for trial in {1..3}; do
           printf "%s," "$trial"
@@ -35,7 +35,7 @@ for sf in 10000 100000 1000000 10000000; do
   ./tatp_msc_dense --load --records=$sf --path=$path --pmem=$pm --cach_size=$memlimit
 
   printf "Evaluating Pmem=$pm\n"
-    command="./tatp_msc_dense --run --records=$sf --path=$path --pmem=$pm --cach_size=$memlimit" 
+    command="./tatp_msc_dense --run --records=$sf --path=$path --pmem=$pm --cache_size=$memlimit" 
     printf "%s\n" "$command"
     for trial in {1..3}; do
         [ ! -e $path-shm ] || rm $path-shm
@@ -57,7 +57,7 @@ for sf in 10000 100000 1000000 10000000; do
   ./tatp_msc_large --load --records=$sf --path=$path --pmem=$pm --cach_size=$memlimit
 
   printf "Evaluating Pmem=$pm\n"
-  command="./tatp_msc_large --run --records=$sf --path=$path --pmem=$pm --cach_size=$memlimit" 
+  command="./tatp_msc_large --run --records=$sf --path=$path --pmem=$pm --cache_size=$memlimit" 
   printf "%s\n" "$command"
   for trial in {1..3}; do
     [ ! -e $path-shm ] || rm $path-shm

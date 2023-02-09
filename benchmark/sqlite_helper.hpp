@@ -56,7 +56,6 @@ sqlite3* open_db(const char* path, string pmem, string sync, string cache){
   rc = sqlite3_exec(db,s.c_str(), NULL,NULL,NULL);
   //rc = sqlite3_exec(db,"PRAGMA cache_size=0", NULL,NULL,NULL);
   if(rc){cout << "Pragma cache_size not working: " << rc << endl;}
-  
   return db;
 }
 

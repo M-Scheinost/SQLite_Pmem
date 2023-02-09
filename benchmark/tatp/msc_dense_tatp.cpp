@@ -384,6 +384,7 @@ int main (int argc, char** argv){
   adder("path", "Path", cxxopts::value<std::string>()->default_value("/mnt/pmem0/scheinost/benchmark.db"));
   adder("pmem", "Pmem", cxxopts::value<std::string>()->default_value("PMem"));
   adder("wal_limit", "wal limit", cxxopts::value<uint64_t>()->default_value("1000"));
+  adder("sync", "Pmem", cxxopts::value<std::string>()->default_value("FULL"));
 
   cxxopts::ParseResult result = options.parse(argc, argv);
 
@@ -397,6 +398,7 @@ int main (int argc, char** argv){
   string cache_size = result["cache_size"].as<std::string>();
   string path = result["path"].as<std::string>();
   string pmem = result["pmem"].as<string>();
+  string sync = result["sync"].as<string>();
 
   if (result.count("load")) {
     sqlite3 *db = open_db(path.c_str(), pmem);
@@ -422,7 +424,7 @@ int main (int argc, char** argv){
   if (result.count("run")) {
     int rc;
     std::vector<Worker> workers;
-    sqlite3 *db = open_db(path.c_str(), pmem);
+    sqlite3 *db = open_db(path.c_str(), pmem, sync, cache_size);
 
     workers.emplace_back(db, n_subscriber_records);
 

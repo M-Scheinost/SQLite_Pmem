@@ -70,6 +70,7 @@
         "thread": "cpp",
         "variant": "cpp",
         "semaphore": "cpp",
-        "filesystem": "cpp"
+        "filesystem": "cpp",
+        "span": "cpp"
     }
 }

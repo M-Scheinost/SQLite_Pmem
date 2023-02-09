@@ -76,7 +76,7 @@ int main(int argc, char **argv) {
   cxxopts::OptionAdder adder = options.add_options("SQLite3");
   adder("path", "Path", cxxopts::value<std::string>()->default_value("/mnt/pmem0/scheinost/benchmark.db"));
   adder("pmem", "Pmem", cxxopts::value<std::string>()->default_value("PMem"));
-    adder("cache_size", "Cache size", cxxopts::value<std::string>()->default_value("-1000000"));
+  adder("cache_size", "Cache size", cxxopts::value<std::string>()->default_value("0"));
   adder("sync", "Pmem", cxxopts::value<std::string>()->default_value("FULL"));
   
   auto result = options.parse(argc, argv);
@@ -90,9 +90,12 @@ int main(int argc, char **argv) {
   auto mix = result["mix"].as<float>();
   string path = result["path"].as<std::string>();
   string pmem = result["pmem"].as<string>();
+  std::string sync = result["sync"].as<string>();
+  std::string cache_size = result["cache_size"].as<string>();
+
   int rc;
   if (result.count("load")) {
-    sqlite3* db = open_db(path.c_str(),pmem);
+    sqlite3* db = open_db(path.c_str(), pmem, sync, cache_size);
 
     rc = sqlite3_exec(db,"DROP TABLE IF EXISTS t", NULL,NULL,NULL);
      if(rc){cout << "DROP: " << rc << endl;}
@@ -118,7 +121,7 @@ int main(int argc, char **argv) {
   }
 
   if (result.count("run")) {
-    sqlite3* db = open_db(path.c_str(),pmem);
+    sqlite3* db = open_db(path.c_str(), pmem, sync, cache_size);
 
     // rc = sqlite3_exec(db,"PRAGMA cache_size=-1000000", NULL,NULL,NULL);
     // if (rc != SQLITE_OK) {throw std::runtime_error(sqlite3_errmsg(db));}

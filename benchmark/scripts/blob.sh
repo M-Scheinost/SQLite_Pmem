@@ -16,7 +16,7 @@ for sf in 100000 1000000 10000000; do
 
     printf "Evaluating SQLite3...\n"
     for mix in "0.9" "0.5" "0.1"; do
-      command="./blob_sqlite3 --run --size=$sf --mix=$mix --path=$path --pmem=$pm --cach_size=$memlimit"
+      command="./blob_sqlite3 --run --size=$sf --mix=$mix --path=$path --pmem=$pm --cache_size=$memlimit"
       printf "%s\n" "$command"
       for trial in {1..3}; do
         printf "%s," "$trial"
@@ -40,7 +40,7 @@ for sf in 100000 1000000 10000000; do
 
   printf "Evaluating SQLite3...\n"
   for mix in "0.9" "0.5" "0.1"; do
-    command="./blob_msc_dense --run --size=$sf --mix=$mix --path=$path --pmem=$pm --cach_size=$memlimit"
+    command="./blob_msc_dense --run --size=$sf --mix=$mix --path=$path --pmem=$pm --cache_size=$memlimit"
     printf "%s\n" "$command"
     for trial in {1..3}; do
       [ ! -e $path-shm ] || rm $path-*
@@ -63,7 +63,7 @@ for sf in 100000 1000000 10000000; do
 
   printf "Evaluating SQLite3...\n"
   for mix in "0.9" "0.5" "0.1"; do
-    command="./blob_msc_large --run --size=$sf --mix=$mix --path=$path --pmem=$pm --cach_size=$memlimit"
+    command="./blob_msc_large --run --size=$sf --mix=$mix --path=$path --pmem=$pm --cache_size=$memlimit"
     printf "%s\n" "$command"
     for trial in {1..3}; do
       [ ! -e $path-shm ] || rm $path-*

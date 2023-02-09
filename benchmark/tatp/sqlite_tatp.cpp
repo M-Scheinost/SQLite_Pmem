@@ -395,13 +395,13 @@ int main (int argc, char** argv){
 
   uint64_t n_subscriber_records = result["records"].as<uint64_t>();
   string journal_mode = result["journal_mode"].as<std::string>();
-  string cache_size = result["cache_size"].as<std::string>();
   string path = result["path"].as<std::string>();
   string pmem = result["pmem"].as<string>();
+  string cache_size = result["cache_size"].as<std::string>();
   string sync = result["sync"].as<string>();
 
   if (result.count("load")) {
-    sqlite3 *db = open_db(path.c_str(), pmem);
+    sqlite3* db = open_db(path.c_str(), pmem, sync, cache_size);
     auto start = chrono::steady_clock::now();
     load_db_1(db, n_subscriber_records);
     auto end = chrono::steady_clock::now();
