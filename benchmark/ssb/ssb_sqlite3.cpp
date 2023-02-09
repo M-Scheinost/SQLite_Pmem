@@ -15,18 +15,6 @@ void exec(sqlite3* db, const string &stmnt, const string &query){
 int main(int argc, char **argv) {
   cxxopts::Options options = ssb_options("ssb_sqlite3", "SSB on SQLite3");
 
-  cxxopts::OptionAdder adder = options.add_options("SQLite3");
-  adder("bloom_filter", "Use Bloom filters",
-        cxxopts::value<bool>()->default_value("false"));
-  adder("cache_size", "Cache size",
-        cxxopts::value<std::string>()->default_value("-1000000"));
-  
-  adder("path", "Path", cxxopts::value<std::string>()->default_value("/mnt/pmem0/scheinost/benchmark.db"));
-  adder("sf", "the scale factor", cxxopts::value<std::string>()->default_value("1"));
-  adder("pmem", "Pmem", cxxopts::value<std::string>()->default_value("PMem"));
-  adder("cache_size", "Cache size", cxxopts::value<std::string>()->default_value("0"));
-  adder("sync", "Pmem", cxxopts::value<std::string>()->default_value("FULL"));
-
   cxxopts::ParseResult result = options.parse(argc, argv);
 
   std::string path = result["path"].as<std::string>();

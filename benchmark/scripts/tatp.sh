@@ -10,7 +10,7 @@ for sf in 10000 100000 1000000 10000000; do
     [ ! -e $path ] || rm $path*
 
     printf "Loading data into SQLite3 Pmem=$pm\n"
-    ./tatp_sqlite --load --records=$sf --path=$path --pmem=$pm --cach_size=$memlimit
+    ./tatp_sqlite --load --records=$sf --path=$path --pmem=$pm --cache_size=$memlimit
 
     printf "Evaluating Pmem=$pm\n"
       command="./tatp_sqlite --run --records=$sf --path=$path --pmem=$pm --cache_size=$memlimit" 
@@ -32,7 +32,7 @@ for sf in 10000 100000 1000000 10000000; do
   [ ! -e $path ] || rm $path*
 
   printf "Loading data into SQLite3 Pmem=$pm\n"
-  ./tatp_msc_dense --load --records=$sf --path=$path --pmem=$pm --cach_size=$memlimit
+  ./tatp_msc_dense --load --records=$sf --path=$path --pmem=$pm --cache_size=$memlimit
 
   printf "Evaluating Pmem=$pm\n"
     command="./tatp_msc_dense --run --records=$sf --path=$path --pmem=$pm --cache_size=$memlimit" 
@@ -54,7 +54,7 @@ for sf in 10000 100000 1000000 10000000; do
   [ ! -e $path ] || rm $path*
 
   printf "Loading data into SQLite3 Pmem=$pm\n"
-  ./tatp_msc_large --load --records=$sf --path=$path --pmem=$pm --cach_size=$memlimit
+  ./tatp_msc_large --load --records=$sf --path=$path --pmem=$pm --cache_size=$memlimit
 
   printf "Evaluating Pmem=$pm\n"
   command="./tatp_msc_large --run --records=$sf --path=$path --pmem=$pm --cache_size=$memlimit" 
@@ -72,7 +72,7 @@ for sf in 10000 100000 1000000 10000000; do
 #---------------------------------------------
   path="/mnt/pmem0/scheinost/benchmark.db"
   printf "Loading data into DuckDB...\n"
-    ./tatp_duckdb --load --records=$sf --path=$path --cach_size=$memlimit
+    ./tatp_duckdb --load --records=$sf --path=$path --memory_limit=200MB
 
   printf "Evaluating DuckDB...\n"
   #for memory_limit in "100MB" "200MB" "500MB" "1GB" "2GB" "5GB"; do

@@ -20,6 +20,15 @@ cxxopts::Options tatp_options(const std::string &program,
   adder("measure", "Measure duration in seconds",
         cxxopts::value<size_t>()->default_value("60"));
   adder("help", "Print help");
+
+  adder("journal_mode", "Journal mode", cxxopts::value<std::string>()->default_value("DELETE"));
+  adder("cache_size", "Cache size", cxxopts::value<std::string>()->default_value("0"));
+  adder("path", "Path", cxxopts::value<std::string>()->default_value("/mnt/pmem0/scheinost/benchmark.db"));
+  adder("pmem", "Pmem", cxxopts::value<std::string>()->default_value("PMem"));
+  adder("sync", "Pmem", cxxopts::value<std::string>()->default_value("FULL"));
+    adder("wal_limit", "wal limit", cxxopts::value<uint64_t>()->default_value("1000"));
+
+
   return options;
 }
 
