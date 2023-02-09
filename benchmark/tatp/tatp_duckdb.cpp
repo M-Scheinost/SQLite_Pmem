@@ -184,7 +184,6 @@ int main(int argc, char **argv) {
   cxxopts::OptionAdder adder = options.add_options("DuckDB");
   adder("memory_limit", "Memory limit",cxxopts::value<std::string>()->default_value("1GB"));
   adder("threads", "Number of threads",cxxopts::value<std::string>()->default_value("1"));
-  adder("path", "Path", cxxopts::value<std::string>()->default_value("/mnt/pmem0/scheinost/benchmark.db"));
 
   cxxopts::ParseResult result = options.parse(argc, argv);
 

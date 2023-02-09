@@ -6,7 +6,6 @@
 #include <fstream>
 #include <chrono>
 #include <filesystem>
-
 #include "../msc_large_helper.hpp"
 
 using namespace std;

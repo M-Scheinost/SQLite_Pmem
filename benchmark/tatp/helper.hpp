@@ -1,9 +1,10 @@
-#ifndef SQLITE_PERFORMANCE_TATP_HELPERS_HPP
-#define SQLITE_PERFORMANCE_TATP_HELPERS_HPP
+#ifndef SQLITE_PERFORMANCE_TATP_HELPER_HPP
+#define SQLITE_PERFORMANCE_TATP_HELPER_HPP
 
 #include "cxxopts.hpp"
 #include <string>
 #include <vector>
+#include <sstream>
 
 const char sqlite_init[] = "PRAGMA journal_mode = WAL;"\
                     "DROP TABLE IF EXISTS call_forwarding;"\
@@ -131,19 +132,21 @@ cxxopts::Options tatp_options(const std::string &program,
   cxxopts::OptionAdder adder = options.add_options();
   adder("load", "Load the database");
   adder("run", "Run the benchmark");
-  adder("records", "Number of subscriber records",
-        cxxopts::value<uint64_t>()->default_value("1000"));
-  adder("clients", "Number of clients",
-        cxxopts::value<size_t>()->default_value("1"));
-  adder("warmup", "Warmup duration in seconds",
-        cxxopts::value<size_t>()->default_value("10"));
-  adder("measure", "Measure duration in seconds",
-        cxxopts::value<size_t>()->default_value("60"));
+  adder("records", "Number of subscriber records", cxxopts::value<uint64_t>()->default_value("1000"));
+  adder("clients", "Number of clients", cxxopts::value<size_t>()->default_value("1"));
+  adder("warmup", "Warmup duration in seconds", cxxopts::value<size_t>()->default_value("10"));
+  adder("measure", "Measure duration in seconds", cxxopts::value<size_t>()->default_value("60"));
   adder("help", "Print help");
+
+  adder("journal_mode", "Journal mode", cxxopts::value<std::string>()->default_value("DELETE"));
+  adder("cache_size", "Cache size", cxxopts::value<std::string>()->default_value("0"));
+  adder("path", "Path", cxxopts::value<std::string>()->default_value("/mnt/pmem0/scheinost/benchmark.db"));
+  adder("pmem", "Pmem", cxxopts::value<std::string>()->default_value("PMem"));
+  adder("sync", "Pmem", cxxopts::value<std::string>()->default_value("FULL"));
+  adder("wal_limit", "wal limit", cxxopts::value<uint64_t>()->default_value("1000"));
+
+
   return options;
 }
-
-
-
 
 #endif // SQLITE_PERFORMANCE_TATP_HELPERS_HPP

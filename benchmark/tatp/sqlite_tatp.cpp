@@ -6,7 +6,6 @@
 #include <fstream>
 #include <chrono>
 #include <filesystem>
-
 #include "../sqlite_helper.hpp"
 
 using namespace std;
