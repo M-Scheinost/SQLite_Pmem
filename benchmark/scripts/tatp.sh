@@ -1,5 +1,5 @@
 #!/bin/bash
-memlimit="-48828"
+memlimit="0"
 path="/mnt/pmem0/scheinost/benchmark.db"
 [ ! -e $path ] || rm $path*
 

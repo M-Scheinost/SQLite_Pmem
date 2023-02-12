@@ -21,6 +21,7 @@ cxxopts::Options blob_options(const std::string &program,
   adder("pmem", "Pmem", cxxopts::value<std::string>()->default_value("PMem"));
   adder("cache_size", "Cache size", cxxopts::value<std::string>()->default_value("0"));
   adder("sync", "Pmem", cxxopts::value<std::string>()->default_value("FULL"));
+  adder("memory_limit", "Memory limit",cxxopts::value<std::string>()->default_value("1GB"));
 
   return options;
 }

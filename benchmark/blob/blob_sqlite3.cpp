@@ -44,6 +44,8 @@ public:
       rc = step_single(select_stmt_);
       if(rc){cout << "step: " << rc << endl;}
     } else {
+      free(blob_);
+      blob_ = malloc(size_);
       rc = sqlite3_exec(db, "BEGIN EXCLUSIVE;", NULL,NULL,NULL);
       if(rc){cout << "Begin trans: " << rc << endl;}
 

@@ -2,7 +2,7 @@
 
 cd tatp
 for sync in "NORMAL" "FULL" ; do
-  for cache in "-1049000" "0"; do
+  for cache in "-48828" "0"; do
 printf "______________________________________________________\n\t\t\tUnix cache=$cache\tsync=$sync\n______________________________________________________\n" >> ../../results/master_results.csv
     for sf in 10000 100000 1000000 10000000; do
       path="/mnt/pmem0/scheinost/benchmark.db"
