@@ -1,3 +1,5 @@
+This repository contains the code for my bachelors thesis.
+
 # How to build
 I made a cmake file so do the magic:
 ```
@@ -41,7 +43,7 @@ in the results folder.
 ## SQLite
 -   __sqlite3_shell__
 
-# sources
+# Sources
 - sqlite3 from sqlite.org
 - DuckDB from https://github.com/UWHustle/sqlite-past-present-future
 - benchmark setup from: https://github.com/UWHustle/sqlite-past-present-future
